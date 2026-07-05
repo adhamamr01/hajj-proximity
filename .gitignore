@@ -32,6 +32,10 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
+
+# app.json contains secrets — use app.config.js instead
+app.json
 
 # typescript
 *.tsbuildinfo
