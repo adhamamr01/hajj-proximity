@@ -15,20 +15,26 @@ export default function MapScreen() {
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null
 
-    Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.Balanced, distanceInterval: 100 },
-      (loc) => {
-        const pos: [number, number] = [loc.coords.latitude, loc.coords.longitude]
-        setUserLocation(pos)
-        setInsideHaram(isInsidePolygon(pos, HARAM_POLYGON))
+    const start = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync()
+      if (status !== 'granted') return
 
-        const nearest = MEEQAT_POINTS
-          .map(m => ({ name: m.name.split(' (')[0], dist: distKm(pos, [m.lat, m.lng]) }))
-          .sort((a, b) => a.dist - b.dist)[0]
-        setNearestMeeqat(nearest)
-      },
-    ).then(sub => { subscription = sub })
+      subscription = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.Balanced, distanceInterval: 100 },
+        (loc) => {
+          const pos: [number, number] = [loc.coords.latitude, loc.coords.longitude]
+          setUserLocation(pos)
+          setInsideHaram(isInsidePolygon(pos, HARAM_POLYGON))
 
+          const nearest = MEEQAT_POINTS
+            .map(m => ({ name: m.name.split(' (')[0], dist: distKm(pos, [m.lat, m.lng]) }))
+            .sort((a, b) => a.dist - b.dist)[0]
+          setNearestMeeqat(nearest)
+        },
+      )
+    }
+
+    start()
     return () => { subscription?.remove() }
   }, [])
 
