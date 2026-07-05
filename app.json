@@ -1,23 +1,48 @@
 {
   "expo": {
-    "name": "hajj-proximity",
+    "name": "Hajj Proximity",
     "slug": "hajj-proximity",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hajjproximity.app",
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Hajj Proximity needs your location at all times to alert you when you approach a Meeqat boundary or enter the Haram, even when the app is in the background.",
+        "NSLocationWhenInUseUsageDescription": "Hajj Proximity uses your location to show your position on the map and calculate distances to Meeqat points.",
+        "UIBackgroundModes": ["location", "fetch"]
+      }
     },
     "android": {
+      "package": "com.hajjproximity.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a5f3f"
       },
-      "predictiveBackGestureEnabled": false
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Hajj Proximity needs your location at all times to alert you when you approach a Meeqat boundary or enter the Haram.",
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1a5f3f"
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     }
