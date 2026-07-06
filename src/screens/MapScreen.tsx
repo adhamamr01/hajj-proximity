@@ -4,7 +4,7 @@ import MapView, { Marker, Polyline, UrlTile, PROVIDER_GOOGLE } from 'react-nativ
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
-import { TILE_URL, TILE_ATTRIBUTION } from '../utils/tiles'
+import { TILE_URL, TILE_ATTRIBUTION, TILE_CACHE_PATH, TILE_CACHE_MAX_AGE_SECONDS } from '../utils/tiles'
 import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints } from '../utils/geo'
 import { HARAM_POLYGON } from '../data/haram'
 
@@ -48,7 +48,7 @@ export default function MapScreen() {
       if (status !== 'granted') { setPermissionDenied(true); return }
 
       subscription = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, distanceInterval: 100 },
+        { accuracy: Location.Accuracy.Balanced, distanceInterval: 100, timeInterval: 5000 },
         (loc) => {
           const pos: [number, number] = [loc.coords.latitude, loc.coords.longitude]
           setUserLocation(pos)
@@ -102,7 +102,12 @@ export default function MapScreen() {
         showsUserLocation
         showsMyLocationButton={false}
       >
-        <UrlTile urlTemplate={TILE_URL} maximumZ={19} />
+        <UrlTile
+          urlTemplate={TILE_URL}
+          maximumZ={19}
+          tileCachePath={TILE_CACHE_PATH}
+          tileCacheMaxAge={TILE_CACHE_MAX_AGE_SECONDS}
+        />
         {/* Makkah marker */}
         <Marker
           coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}

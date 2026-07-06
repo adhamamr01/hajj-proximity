@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { HARAM_POLYGON } from '../data/haram'
 import { MAKKAH } from '../data/meeqat'
 import { isInsidePolygon } from '../utils/geo'
-import { TILE_URL, TILE_ATTRIBUTION } from '../utils/tiles'
+import { TILE_URL, TILE_ATTRIBUTION, TILE_CACHE_PATH, TILE_CACHE_MAX_AGE_SECONDS } from '../utils/tiles'
 
 const HARAM_COORDS = HARAM_POLYGON.map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
 
@@ -25,7 +25,7 @@ export default function HaramScreen() {
       if (status !== 'granted') { setPermissionDenied(true); return }
 
       subscription = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, distanceInterval: 50 },
+        { accuracy: Location.Accuracy.Balanced, distanceInterval: 50, timeInterval: 5000 },
         (loc) => {
           const pos: [number, number] = [loc.coords.latitude, loc.coords.longitude]
           setUserLocation(pos)
@@ -89,7 +89,12 @@ export default function HaramScreen() {
         showsUserLocation
         showsMyLocationButton={false}
       >
-        <UrlTile urlTemplate={TILE_URL} maximumZ={19} />
+        <UrlTile
+          urlTemplate={TILE_URL}
+          maximumZ={19}
+          tileCachePath={TILE_CACHE_PATH}
+          tileCacheMaxAge={TILE_CACHE_MAX_AGE_SECONDS}
+        />
         {/* Makkah marker */}
         <Marker
           coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}
