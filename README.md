@@ -78,7 +78,3 @@ src/
   services/     # LocationService (background tracking), NotificationService
   utils/        # geo.ts — haversine, bearing, arc, polygon utilities
 ```
-
-## Disclaimer
-
-The Haram boundary shown in this app is an educational approximation. Do not rely on it for religious rulings.
