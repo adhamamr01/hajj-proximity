@@ -25,6 +25,8 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return true
 }
 
+const IMMEDIATE_TRIGGER = Platform.OS === 'android' ? { channelId: 'proximity' } : null
+
 export async function sendMeeqatAlert(meeqatName: string, distanceKm: number): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     content: {
@@ -33,7 +35,7 @@ export async function sendMeeqatAlert(meeqatName: string, distanceKm: number): P
       sound: 'default',
       data: { type: 'meeqat' },
     },
-    trigger: null, // immediate
+    trigger: IMMEDIATE_TRIGGER,
   })
 }
 
@@ -45,7 +47,7 @@ export async function sendHaramEntryAlert(): Promise<void> {
       sound: 'default',
       data: { type: 'haram_entry' },
     },
-    trigger: null,
+    trigger: IMMEDIATE_TRIGGER,
   })
 }
 
@@ -57,6 +59,6 @@ export async function sendHaramExitAlert(): Promise<void> {
       sound: 'default',
       data: { type: 'haram_exit' },
     },
-    trigger: null,
+    trigger: IMMEDIATE_TRIGGER,
   })
 }

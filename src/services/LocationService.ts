@@ -68,11 +68,13 @@ TaskManager.defineTask(LOCATION_TASK, async ({ data, error }: any) => {
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
-export async function requestLocationPermission(): Promise<boolean> {
+export type LocationPermissionResult = 'granted' | 'foreground_denied' | 'background_denied'
+
+export async function requestLocationPermission(): Promise<LocationPermissionResult> {
   const { status: fg } = await Location.requestForegroundPermissionsAsync()
-  if (fg !== 'granted') return false
+  if (fg !== 'granted') return 'foreground_denied'
   const { status: bg } = await Location.requestBackgroundPermissionsAsync()
-  return bg === 'granted'
+  return bg === 'granted' ? 'granted' : 'background_denied'
 }
 
 export async function startTracking(): Promise<void> {

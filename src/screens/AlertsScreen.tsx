@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, Switch, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native'
+import { View, Text, Switch, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
   startTracking, stopTracking, isTracking,
@@ -36,11 +36,26 @@ export default function AlertsScreen() {
       setTracking(false)
       return
     }
-    const locGranted = await requestLocationPermission()
-    if (!locGranted) {
+    const locResult = await requestLocationPermission()
+    if (locResult === 'foreground_denied') {
       Alert.alert(
         'Location Permission Required',
-        'Please grant "Allow all the time" location permission in Settings so alerts work in the background.',
+        'Please allow location access so alerts can work.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ],
+      )
+      return
+    }
+    if (locResult === 'background_denied') {
+      Alert.alert(
+        'Background Location Required',
+        'To receive alerts while the app is closed, set location access to "Allow all the time" in Settings.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ],
       )
       return
     }

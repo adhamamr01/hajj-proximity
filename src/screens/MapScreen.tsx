@@ -4,7 +4,7 @@ import MapView, { Marker, Polyline, UrlTile, PROVIDER_GOOGLE } from 'react-nativ
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
-import { TILE_URL } from '../utils/tiles'
+import { TILE_URL, TILE_ATTRIBUTION } from '../utils/tiles'
 import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints } from '../utils/geo'
 import { HARAM_POLYGON } from '../data/haram'
 
@@ -132,6 +132,8 @@ export default function MapScreen() {
         ))}
       </MapView>
 
+      <Text style={styles.attribution}>{TILE_ATTRIBUTION}</Text>
+
       {/* Status banner */}
       <View style={[styles.banner, insideHaram && styles.bannerHaram]}>
         {insideHaram ? (
@@ -191,6 +193,15 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   centerBtnText: { fontSize: 22, color: '#1a5f3f' },
+  attribution: {
+    position: 'absolute',
+    bottom: 4,
+    left: 8,
+    fontSize: 10,
+    color: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    paddingHorizontal: 4,
+  },
   denied: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   deniedTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', textAlign: 'center' },
   deniedBody: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20 },

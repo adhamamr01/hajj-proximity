@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { HARAM_POLYGON } from '../data/haram'
 import { MAKKAH } from '../data/meeqat'
 import { isInsidePolygon } from '../utils/geo'
-import { TILE_URL } from '../utils/tiles'
+import { TILE_URL, TILE_ATTRIBUTION } from '../utils/tiles'
 
 const HARAM_COORDS = HARAM_POLYGON.map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
 
@@ -106,6 +106,8 @@ export default function HaramScreen() {
         />
       </MapView>
 
+      <Text style={styles.attribution}>{TILE_ATTRIBUTION}</Text>
+
       {/* Status banner */}
       <View style={[styles.banner, insideHaram ? styles.bannerInside : styles.bannerOutside]}>
         {!hasLocation ? (
@@ -172,6 +174,15 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   btnText: { fontSize: 13, fontWeight: '600', color: '#1a5f3f' },
+  attribution: {
+    position: 'absolute',
+    bottom: 4,
+    left: 8,
+    fontSize: 10,
+    color: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    paddingHorizontal: 4,
+  },
   disclaimer: {
     position: 'absolute',
     top: 12,
