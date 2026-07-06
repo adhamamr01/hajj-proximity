@@ -114,12 +114,6 @@ export default function HaramScreen() {
         )}
       </View>
 
-      {/* Disclaimer */}
-      <View style={styles.disclaimer}>
-        <Text style={styles.disclaimerText}>
-          This boundary is an educational approximation. Do not rely on it for religious rulings.
-        </Text>
-      </View>
 
       {/* Buttons */}
       <View style={styles.btnGroup}>
