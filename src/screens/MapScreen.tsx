@@ -4,6 +4,7 @@ import MapView, { Marker, Polyline, UrlTile, PROVIDER_GOOGLE } from 'react-nativ
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
+import { TILE_URL } from '../utils/tiles'
 import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints } from '../utils/geo'
 import { HARAM_POLYGON } from '../data/haram'
 
@@ -101,7 +102,7 @@ export default function MapScreen() {
         showsUserLocation
         showsMyLocationButton={false}
       >
-        <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} />
+        <UrlTile urlTemplate={TILE_URL} maximumZ={19} />
         {/* Makkah marker */}
         <Marker
           coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}

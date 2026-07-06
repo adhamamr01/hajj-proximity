@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { HARAM_POLYGON } from '../data/haram'
 import { MAKKAH } from '../data/meeqat'
 import { isInsidePolygon } from '../utils/geo'
+import { TILE_URL } from '../utils/tiles'
 
 const HARAM_COORDS = HARAM_POLYGON.map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
 
@@ -88,7 +89,7 @@ export default function HaramScreen() {
         showsUserLocation
         showsMyLocationButton={false}
       >
-        <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} />
+        <UrlTile urlTemplate={TILE_URL} maximumZ={19} />
         {/* Makkah marker */}
         <Marker
           coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}
