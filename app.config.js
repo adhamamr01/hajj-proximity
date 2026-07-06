@@ -61,6 +61,13 @@ module.exports = {
           color: '#1a5f3f',
         },
       ],
+      [
+        '@sentry/react-native/expo',
+        {
+          organization: process.env.SENTRY_ORG,
+          project: process.env.SENTRY_PROJECT,
+        },
+      ],
     ],
     web: {
       favicon: './assets/favicon.png',

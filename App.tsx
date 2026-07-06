@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { StatusBar } from 'expo-status-bar'
 import * as Notifications from 'expo-notifications'
 import { Ionicons } from '@expo/vector-icons'
+import * as Sentry from '@sentry/react-native'
 import MapScreen from './src/screens/MapScreen'
 import HaramScreen from './src/screens/HaramScreen'
 import AlertsScreen from './src/screens/AlertsScreen'
@@ -12,7 +13,16 @@ import ChecklistScreen from './src/screens/ChecklistScreen'
 const Tab = createBottomTabNavigator()
 const navigationRef = createNavigationContainerRef()
 
-export default function App() {
+// DSN is a public identifier by Sentry's own design, safe to inline via EXPO_PUBLIC_.
+// Left unset in dev — Sentry.init() is a no-op without a dsn.
+if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    tracesSampleRate: 1.0,
+  })
+}
+
+function App() {
   // Navigate to the relevant tab when user taps a notification
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener(response => {
@@ -70,3 +80,5 @@ export default function App() {
     </NavigationContainer>
   )
 }
+
+export default Sentry.wrap(App)

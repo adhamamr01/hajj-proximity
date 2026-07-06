@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { View, Text, Switch, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native'
+import { View, Text, Switch, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking, Platform } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as IntentLauncher from 'expo-intent-launcher'
 import {
   startTracking, stopTracking, isTracking,
   getThreshold, setThreshold, resetAlerts,
@@ -83,6 +84,10 @@ export default function AlertsScreen() {
     await AsyncStorage.setItem(HARAM_ALERTS_KEY, String(val))
   }
 
+  const openBatterySettings = () => {
+    IntentLauncher.startActivityAsync('android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS')
+  }
+
   const handleReset = () => {
     Alert.alert('Reset Alerts', 'This will re-enable alerts for all Meeqat points you have already passed. Continue?', [
       { text: 'Cancel', style: 'cancel' },
@@ -154,6 +159,21 @@ export default function AlertsScreen() {
         </View>
       </View>
 
+      {/* Battery optimization */}
+      {Platform.OS === 'android' && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Battery Optimization</Text>
+          <Text style={styles.cardDescription}>
+            Some phone manufacturers stop background tracking to save battery. If alerts stop
+            arriving while the app is closed, find Hajj Proximity in this list and set it to
+            "Don't optimize".
+          </Text>
+          <TouchableOpacity style={styles.secondaryBtn} onPress={openBatterySettings}>
+            <Text style={styles.secondaryBtnText}>Open Battery Settings</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Reset */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Reset Alerts</Text>
@@ -221,4 +241,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resetBtnText: { color: '#dc2626', fontWeight: '600', fontSize: 14 },
+  secondaryBtn: {
+    borderWidth: 1.5,
+    borderColor: '#1a5f3f',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  secondaryBtnText: { color: '#1a5f3f', fontWeight: '600', fontSize: 14 },
 })

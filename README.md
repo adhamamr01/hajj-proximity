@@ -69,6 +69,17 @@ The Google Maps API key is stored as an EAS secret (`GOOGLE_MAPS_API_KEY`) and i
 eas env:create --variable-name GOOGLE_MAPS_API_KEY --value YOUR_KEY --environment production --visibility secret
 ```
 
+### Crash reporting (Sentry)
+
+Crash reporting is wired up via `@sentry/react-native` but disabled until a DSN is set — `Sentry.init()` is a no-op without one. To enable it:
+
+1. Create a free project at [sentry.io](https://sentry.io)
+2. Set the DSN as an EAS env var (safe to be non-secret — Sentry DSNs are public identifiers by design):
+   ```bash
+   eas env:create --variable-name EXPO_PUBLIC_SENTRY_DSN --value YOUR_DSN --environment production
+   ```
+3. For source map uploads on build, also set `SENTRY_ORG` and `SENTRY_PROJECT` as EAS env vars matching your Sentry project slugs, plus `SENTRY_AUTH_TOKEN` as a secret (from Sentry → Settings → Auth Tokens).
+
 ## Project structure
 
 ```
