@@ -11,6 +11,8 @@ export const LOCATION_TASK = 'hajj-proximity-location'
 const ALERTED_MEEQAT_KEY = 'alerted_meeqat'
 const HARAM_STATUS_KEY = 'haram_status'
 const THRESHOLD_KEY = 'alert_threshold_km'
+const MEEQAT_ALERTS_KEY = 'meeqat_alerts_enabled'
+const HARAM_ALERTS_KEY = 'haram_alerts_enabled'
 
 export const DEFAULT_THRESHOLD_KM = 20
 
@@ -24,33 +26,43 @@ TaskManager.defineTask(LOCATION_TASK, async ({ data, error }: any) => {
   if (!loc) return
 
   const pos: [number, number] = [loc.coords.latitude, loc.coords.longitude]
-  const thresholdStr = await AsyncStorage.getItem(THRESHOLD_KEY)
+  const [thresholdStr, meeqatEnabledStr, haramEnabledStr] = await Promise.all([
+    AsyncStorage.getItem(THRESHOLD_KEY),
+    AsyncStorage.getItem(MEEQAT_ALERTS_KEY),
+    AsyncStorage.getItem(HARAM_ALERTS_KEY),
+  ])
   const threshold = thresholdStr ? parseFloat(thresholdStr) : DEFAULT_THRESHOLD_KM
+  const meeqatAlertsOn = meeqatEnabledStr !== 'false'
+  const haramAlertsOn = haramEnabledStr !== 'false'
 
   // ── Meeqat proximity check ────────────────────────────────────────────────
-  const alertedStr = await AsyncStorage.getItem(ALERTED_MEEQAT_KEY)
-  const alerted: string[] = alertedStr ? JSON.parse(alertedStr) : []
+  if (meeqatAlertsOn) {
+    const alertedStr = await AsyncStorage.getItem(ALERTED_MEEQAT_KEY)
+    const alerted: string[] = alertedStr ? JSON.parse(alertedStr) : []
 
-  for (const meeqat of MEEQAT_POINTS) {
-    const dist = distKm(pos, [meeqat.lat, meeqat.lng])
-    if (dist <= threshold && !alerted.includes(meeqat.id)) {
-      await sendMeeqatAlert(meeqat.name, dist)
-      alerted.push(meeqat.id)
-      await AsyncStorage.setItem(ALERTED_MEEQAT_KEY, JSON.stringify(alerted))
+    for (const meeqat of MEEQAT_POINTS) {
+      const dist = distKm(pos, [meeqat.lat, meeqat.lng])
+      if (dist <= threshold && !alerted.includes(meeqat.id)) {
+        await sendMeeqatAlert(meeqat.name, dist)
+        alerted.push(meeqat.id)
+        await AsyncStorage.setItem(ALERTED_MEEQAT_KEY, JSON.stringify(alerted))
+      }
     }
   }
 
   // ── Haram boundary check ──────────────────────────────────────────────────
-  const insideNow = isInsidePolygon(pos, HARAM_POLYGON)
-  const prevStatusStr = await AsyncStorage.getItem(HARAM_STATUS_KEY)
-  const wasInside = prevStatusStr === 'inside'
+  if (haramAlertsOn) {
+    const insideNow = isInsidePolygon(pos, HARAM_POLYGON)
+    const prevStatusStr = await AsyncStorage.getItem(HARAM_STATUS_KEY)
+    const wasInside = prevStatusStr === 'inside'
 
-  if (insideNow && !wasInside) {
-    await sendHaramEntryAlert()
-    await AsyncStorage.setItem(HARAM_STATUS_KEY, 'inside')
-  } else if (!insideNow && wasInside) {
-    await sendHaramExitAlert()
-    await AsyncStorage.setItem(HARAM_STATUS_KEY, 'outside')
+    if (insideNow && !wasInside) {
+      await sendHaramEntryAlert()
+      await AsyncStorage.setItem(HARAM_STATUS_KEY, 'inside')
+    } else if (!insideNow && wasInside) {
+      await sendHaramExitAlert()
+      await AsyncStorage.setItem(HARAM_STATUS_KEY, 'outside')
+    }
   }
 })
 

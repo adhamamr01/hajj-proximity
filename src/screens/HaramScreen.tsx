@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
 import MapView, { Marker, Polygon, PROVIDER_GOOGLE } from 'react-native-maps'
 import * as Location from 'expo-location'
+import { Ionicons } from '@expo/vector-icons'
 import { HARAM_POLYGON } from '../data/haram'
 import { MAKKAH } from '../data/meeqat'
 import { isInsidePolygon } from '../utils/geo'
@@ -13,13 +14,14 @@ export default function HaramScreen() {
   const [insideHaram, setInsideHaram] = useState(false)
   const [hasLocation, setHasLocation] = useState(false)
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
+  const [permissionDenied, setPermissionDenied] = useState(false)
 
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null
 
     const start = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') return
+      if (status !== 'granted') { setPermissionDenied(true); return }
 
       subscription = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.Balanced, distanceInterval: 50 },
@@ -53,6 +55,21 @@ export default function HaramScreen() {
       latitudeDelta: 0.5,
       longitudeDelta: 0.5,
     }, 500)
+  }
+
+  if (permissionDenied) {
+    return (
+      <View style={styles.denied}>
+        <Ionicons name="location-outline" size={48} color="#ccc" />
+        <Text style={styles.deniedTitle}>Location Access Required</Text>
+        <Text style={styles.deniedBody}>
+          Enable location permission in Settings to detect whether you are inside the Haram boundary.
+        </Text>
+        <TouchableOpacity style={styles.deniedBtn} onPress={() => Linking.openSettings()}>
+          <Text style={styles.deniedBtnText}>Open Settings</Text>
+        </TouchableOpacity>
+      </View>
+    )
   }
 
   return (
@@ -95,6 +112,13 @@ export default function HaramScreen() {
         ) : (
           <Text style={styles.bannerText}>You are outside the Haram boundary</Text>
         )}
+      </View>
+
+      {/* Disclaimer */}
+      <View style={styles.disclaimer}>
+        <Text style={styles.disclaimerText}>
+          This boundary is an educational approximation. Do not rely on it for religious rulings.
+        </Text>
       </View>
 
       {/* Buttons */}
@@ -151,4 +175,20 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   btnText: { fontSize: 13, fontWeight: '600', color: '#1a5f3f' },
+  disclaimer: {
+    position: 'absolute',
+    top: 12,
+    left: 16,
+    right: 16,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  disclaimerText: { color: '#fff', fontSize: 11, textAlign: 'center', lineHeight: 16 },
+  denied: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
+  deniedTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', textAlign: 'center' },
+  deniedBody: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20 },
+  deniedBtn: { marginTop: 8, backgroundColor: '#1a5f3f', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 24 },
+  deniedBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 })

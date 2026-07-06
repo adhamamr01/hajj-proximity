@@ -6,6 +6,11 @@ module.exports = {
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
+    splash: {
+      image: './assets/icon.png',
+      resizeMode: 'contain',
+      backgroundColor: '#1a5f3f',
+    },
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.hajjproximity.app',

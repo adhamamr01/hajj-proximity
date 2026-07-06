@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
 import * as Location from 'expo-location'
+import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
 import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints } from '../utils/geo'
 import { HARAM_POLYGON } from '../data/haram'
@@ -11,6 +12,7 @@ export default function MapScreen() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [nearestMeeqat, setNearestMeeqat] = useState<{ name: string; dist: number } | null>(null)
   const [insideHaram, setInsideHaram] = useState(false)
+  const [permissionDenied, setPermissionDenied] = useState(false)
 
   // Compute arcs — same algorithm as the website
   const arcs = useMemo(() => {
@@ -42,7 +44,7 @@ export default function MapScreen() {
 
     const start = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') return
+      if (status !== 'granted') { setPermissionDenied(true); return }
 
       subscription = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.Balanced, distanceInterval: 100 },
@@ -71,6 +73,21 @@ export default function MapScreen() {
       latitudeDelta: 1,
       longitudeDelta: 1,
     }, 500)
+  }
+
+  if (permissionDenied) {
+    return (
+      <View style={styles.denied}>
+        <Ionicons name="location-outline" size={48} color="#ccc" />
+        <Text style={styles.deniedTitle}>Location Access Required</Text>
+        <Text style={styles.deniedBody}>
+          Enable location permission in Settings to see your position and distances to Meeqat points.
+        </Text>
+        <TouchableOpacity style={styles.deniedBtn} onPress={() => Linking.openSettings()}>
+          <Text style={styles.deniedBtnText}>Open Settings</Text>
+        </TouchableOpacity>
+      </View>
+    )
   }
 
   return (
@@ -171,4 +188,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   centerBtnText: { fontSize: 22, color: '#1a5f3f' },
+  denied: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
+  deniedTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', textAlign: 'center' },
+  deniedBody: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20 },
+  deniedBtn: { marginTop: 8, backgroundColor: '#1a5f3f', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 24 },
+  deniedBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 })
