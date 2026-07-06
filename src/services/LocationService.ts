@@ -3,8 +3,8 @@ import * as TaskManager from 'expo-task-manager'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { MEEQAT_POINTS } from '../data/meeqat'
 import { HARAM_POLYGON } from '../data/haram'
-import { distKm, isInsidePolygon } from '../utils/geo'
 import { sendMeeqatAlert, sendHaramEntryAlert, sendHaramExitAlert } from './NotificationService'
+import { evaluateLocationUpdate, AlertState } from './alertLogic'
 
 export const LOCATION_TASK = 'hajj-proximity-location'
 
@@ -26,43 +26,42 @@ TaskManager.defineTask(LOCATION_TASK, async ({ data, error }: any) => {
   if (!loc) return
 
   const pos: [number, number] = [loc.coords.latitude, loc.coords.longitude]
-  const [thresholdStr, meeqatEnabledStr, haramEnabledStr] = await Promise.all([
+  const [thresholdStr, meeqatEnabledStr, haramEnabledStr, alertedStr, prevStatusStr] = await Promise.all([
     AsyncStorage.getItem(THRESHOLD_KEY),
     AsyncStorage.getItem(MEEQAT_ALERTS_KEY),
     AsyncStorage.getItem(HARAM_ALERTS_KEY),
+    AsyncStorage.getItem(ALERTED_MEEQAT_KEY),
+    AsyncStorage.getItem(HARAM_STATUS_KEY),
   ])
-  const threshold = thresholdStr ? parseFloat(thresholdStr) : DEFAULT_THRESHOLD_KM
-  const meeqatAlertsOn = meeqatEnabledStr !== 'false'
-  const haramAlertsOn = haramEnabledStr !== 'false'
 
-  // ── Meeqat proximity check ────────────────────────────────────────────────
-  if (meeqatAlertsOn) {
-    const alertedStr = await AsyncStorage.getItem(ALERTED_MEEQAT_KEY)
-    const alerted: string[] = alertedStr ? JSON.parse(alertedStr) : []
-
-    for (const meeqat of MEEQAT_POINTS) {
-      const dist = distKm(pos, [meeqat.lat, meeqat.lng])
-      if (dist <= threshold && !alerted.includes(meeqat.id)) {
-        await sendMeeqatAlert(meeqat.name, dist)
-        alerted.push(meeqat.id)
-        await AsyncStorage.setItem(ALERTED_MEEQAT_KEY, JSON.stringify(alerted))
-      }
-    }
+  const state: AlertState = {
+    alertedMeeqatIds: alertedStr ? JSON.parse(alertedStr) : [],
+    haramStatus: prevStatusStr === 'inside' ? 'inside' : prevStatusStr === 'outside' ? 'outside' : null,
   }
 
-  // ── Haram boundary check ──────────────────────────────────────────────────
-  if (haramAlertsOn) {
-    const insideNow = isInsidePolygon(pos, HARAM_POLYGON)
-    const prevStatusStr = await AsyncStorage.getItem(HARAM_STATUS_KEY)
-    const wasInside = prevStatusStr === 'inside'
+  const { meeqatAlerts, haramEvent, nextState } = evaluateLocationUpdate(
+    pos,
+    MEEQAT_POINTS,
+    HARAM_POLYGON,
+    {
+      thresholdKm: thresholdStr ? parseFloat(thresholdStr) : DEFAULT_THRESHOLD_KM,
+      meeqatAlertsOn: meeqatEnabledStr !== 'false',
+      haramAlertsOn: haramEnabledStr !== 'false',
+    },
+    state,
+  )
 
-    if (insideNow && !wasInside) {
-      await sendHaramEntryAlert()
-      await AsyncStorage.setItem(HARAM_STATUS_KEY, 'inside')
-    } else if (!insideNow && wasInside) {
-      await sendHaramExitAlert()
-      await AsyncStorage.setItem(HARAM_STATUS_KEY, 'outside')
-    }
+  for (const alert of meeqatAlerts) {
+    await sendMeeqatAlert(alert.meeqatName, alert.distKm)
+  }
+  if (haramEvent === 'entered') await sendHaramEntryAlert()
+  if (haramEvent === 'exited') await sendHaramExitAlert()
+
+  if (nextState.alertedMeeqatIds !== state.alertedMeeqatIds) {
+    await AsyncStorage.setItem(ALERTED_MEEQAT_KEY, JSON.stringify(nextState.alertedMeeqatIds))
+  }
+  if (nextState.haramStatus !== state.haramStatus && nextState.haramStatus) {
+    await AsyncStorage.setItem(HARAM_STATUS_KEY, nextState.haramStatus)
   }
 })
 
