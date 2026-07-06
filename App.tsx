@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { StatusBar } from 'expo-status-bar'
 import { Text } from 'react-native'
 import MapScreen from './src/screens/MapScreen'
+import HaramScreen from './src/screens/HaramScreen'
 import AlertsScreen from './src/screens/AlertsScreen'
 import ChecklistScreen from './src/screens/ChecklistScreen'
 
@@ -29,6 +30,15 @@ export default function App() {
             title: 'Hajj Proximity',
             tabBarLabel: 'Map',
             tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🗺️</Text>,
+          }}
+        />
+        <Tab.Screen
+          name="Haram"
+          component={HaramScreen}
+          options={{
+            title: 'Haram Boundary',
+            tabBarLabel: 'Haram',
+            tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🕋</Text>,
           }}
         />
         <Tab.Screen

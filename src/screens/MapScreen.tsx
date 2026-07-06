@@ -1,16 +1,41 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native'
-import MapView, { Marker, Polygon, Circle, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
+import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints } from '../utils/geo'
 import { HARAM_POLYGON } from '../data/haram'
-import { distKm, isInsidePolygon } from '../utils/geo'
 
 export default function MapScreen() {
   const mapRef = useRef<MapView>(null)
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [nearestMeeqat, setNearestMeeqat] = useState<{ name: string; dist: number } | null>(null)
   const [insideHaram, setInsideHaram] = useState(false)
+
+  // Compute arcs — same algorithm as the website
+  const arcs = useMemo(() => {
+    const enriched = MEEQAT_POINTS
+      .map(p => ({
+        ...p,
+        bearing: bearingTo(MAKKAH, [p.lat, p.lng]),
+        radius: distKm(MAKKAH, [p.lat, p.lng]),
+      }))
+      .sort((a, b) => a.bearing - b.bearing)
+
+    const n = enriched.length
+    return enriched.map((p, i) => {
+      const prev = enriched[(i - 1 + n) % n]
+      const next = enriched[(i + 1) % n]
+      const start = midBearing(prev.bearing, p.bearing)
+      const end = midBearing(p.bearing, next.bearing)
+      const pts = arcPoints(MAKKAH, p.radius, start, end)
+      return {
+        id: p.id,
+        color: p.color,
+        coords: pts.map(([lat, lng]) => ({ latitude: lat, longitude: lng })),
+      }
+    })
+  }, [])
 
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null
@@ -48,8 +73,6 @@ export default function MapScreen() {
     }, 500)
   }
 
-  const haramPolygonCoords = HARAM_POLYGON.map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
-
   return (
     <View style={styles.container}>
       <MapView
@@ -61,7 +84,10 @@ export default function MapScreen() {
         showsMyLocationButton={false}
       >
         {/* Makkah marker */}
-        <Marker coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }} title="Makkah al-Mukarramah" />
+        <Marker
+          coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}
+          title="Makkah al-Mukarramah"
+        />
 
         {/* Meeqat markers */}
         {MEEQAT_POINTS.map(point => (
@@ -74,13 +100,16 @@ export default function MapScreen() {
           />
         ))}
 
-        {/* Haram boundary polygon */}
-        <Polygon
-          coordinates={haramPolygonCoords}
-          strokeColor="#16a34a"
-          strokeWidth={3}
-          fillColor="rgba(34, 197, 94, 0.15)"
-        />
+        {/* Sector arcs */}
+        {arcs.map(arc => (
+          <Polyline
+            key={`arc-${arc.id}`}
+            coordinates={arc.coords}
+            strokeColor={arc.color}
+            strokeWidth={3}
+            lineDashPattern={[8, 5]}
+          />
+        ))}
       </MapView>
 
       {/* Status banner */}
@@ -96,7 +125,7 @@ export default function MapScreen() {
         )}
       </View>
 
-      {/* Center on user button */}
+      {/* Center on user */}
       <TouchableOpacity style={styles.centerBtn} onPress={centerOnUser}>
         <Text style={styles.centerBtnText}>⊕</Text>
       </TouchableOpacity>
