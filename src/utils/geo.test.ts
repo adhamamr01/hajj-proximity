@@ -6,8 +6,7 @@ describe('distKm', () => {
   })
 
   it('Dhul Hulayfah to Makkah is ~335 km', () => {
-    // Dhul Hulayfah (Madinah Meeqat) lat/lng
-    const dist = distKm([24.4209, 39.5192], [21.4225, 39.8262])
+    const dist = distKm([24.41406002656528, 39.54286561840277], [21.4225, 39.8262])
     expect(dist).toBeCloseTo(335, -2) // within 50 km
   })
 

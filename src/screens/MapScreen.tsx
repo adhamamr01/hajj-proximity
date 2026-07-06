@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, Polyline, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
@@ -96,10 +96,12 @@ export default function MapScreen() {
         ref={mapRef}
         style={styles.map}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        mapType="none"
         initialRegion={{ latitude: 22.5, longitude: 40.0, latitudeDelta: 8, longitudeDelta: 8 }}
         showsUserLocation
         showsMyLocationButton={false}
       >
+        <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} />
         {/* Makkah marker */}
         <Marker
           coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
-import MapView, { Marker, Polygon, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, Polygon, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { HARAM_POLYGON } from '../data/haram'
@@ -78,6 +78,7 @@ export default function HaramScreen() {
         ref={mapRef}
         style={styles.map}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        mapType="none"
         initialRegion={{
           latitude: MAKKAH[0],
           longitude: MAKKAH[1],
@@ -87,6 +88,7 @@ export default function HaramScreen() {
         showsUserLocation
         showsMyLocationButton={false}
       >
+        <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} />
         {/* Makkah marker */}
         <Marker
           coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}
@@ -98,8 +100,8 @@ export default function HaramScreen() {
         <Polygon
           coordinates={HARAM_COORDS}
           strokeColor="#16a34a"
-          strokeWidth={3}
-          fillColor="rgba(34, 197, 94, 0.15)"
+          strokeWidth={4}
+          fillColor="rgba(34, 197, 94, 0.25)"
         />
       </MapView>
 
