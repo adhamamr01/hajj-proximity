@@ -47,6 +47,7 @@ module.exports = {
     },
     plugins: [
       'expo-localization',
+      'expo-font',
       [
         'expo-location',
         {
