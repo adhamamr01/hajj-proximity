@@ -8,12 +8,15 @@ import {
   requestLocationPermission, DEFAULT_THRESHOLD_KM,
 } from '../services/LocationService'
 import { requestNotificationPermission } from '../services/NotificationService'
+import { useTranslation } from '../i18n/I18nProvider'
+import { LocalePreference } from '../i18n/locale'
 
 const THRESHOLDS = [10, 20, 50]
 const MEEQAT_ALERTS_KEY = 'meeqat_alerts_enabled'
 const HARAM_ALERTS_KEY = 'haram_alerts_enabled'
 
 export default function AlertsScreen() {
+  const { t, preference, setPreference } = useTranslation()
   const [tracking, setTracking]           = useState(false)
   const [meeqatEnabled, setMeeqatEnabled] = useState(true)
   const [haramEnabled, setHaramEnabled]   = useState(true)
@@ -40,29 +43,29 @@ export default function AlertsScreen() {
     const locResult = await requestLocationPermission()
     if (locResult === 'foreground_denied') {
       Alert.alert(
-        'Location Permission Required',
-        'Please allow location access so alerts can work.',
+        t('locationPermissionRequiredTitle'),
+        t('locationPermissionRequiredBody'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('openSettings'), onPress: () => Linking.openSettings() },
         ],
       )
       return
     }
     if (locResult === 'background_denied') {
       Alert.alert(
-        'Background Location Required',
-        'To receive alerts while the app is closed, set location access to "Allow all the time" in Settings.',
+        t('backgroundLocationRequiredTitle'),
+        t('backgroundLocationRequiredBody'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('openSettings'), onPress: () => Linking.openSettings() },
         ],
       )
       return
     }
     const notifGranted = await requestNotificationPermission()
     if (!notifGranted) {
-      Alert.alert('Notification Permission Required', 'Please allow notifications to receive Meeqat alerts.')
+      Alert.alert(t('notificationPermissionRequiredTitle'), t('notificationPermissionRequiredBody'))
       return
     }
     await startTracking()
@@ -89,9 +92,17 @@ export default function AlertsScreen() {
   }
 
   const handleReset = () => {
-    Alert.alert('Reset Alerts', 'This will re-enable alerts for all Meeqat points you have already passed. Continue?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Reset', style: 'destructive', onPress: resetAlerts },
+    Alert.alert(t('resetAlertsTitle'), t('resetAlertsConfirmBody'), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('reset'), style: 'destructive', onPress: resetAlerts },
+    ])
+  }
+
+  const handleLanguageChange = (pref: LocalePreference) => {
+    if (pref === preference) return
+    Alert.alert(t('restartRequiredTitle'), t('restartRequiredBody'), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('restartNow'), onPress: () => setPreference(pref) },
     ])
   }
 
@@ -99,27 +110,25 @@ export default function AlertsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Tracking toggle */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Background Tracking</Text>
-        <Text style={styles.cardDescription}>
-          Keep this on while travelling to receive alerts even when the app is closed.
-        </Text>
+        <Text style={styles.cardTitle}>{t('backgroundTrackingTitle')}</Text>
+        <Text style={styles.cardDescription}>{t('backgroundTrackingDesc')}</Text>
         <TouchableOpacity
           style={[styles.trackingBtn, tracking && styles.trackingBtnActive]}
           onPress={toggleTracking}
         >
           <Text style={styles.trackingBtnText}>
-            {tracking ? 'Tracking Active — Tap to Stop' : 'Start Tracking'}
+            {tracking ? t('trackingActive') : t('startTracking')}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Alert types */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Alert Types</Text>
+        <Text style={styles.cardTitle}>{t('alertTypesTitle')}</Text>
         <View style={styles.row}>
           <View style={styles.rowText}>
-            <Text style={styles.rowLabel}>Meeqat Proximity</Text>
-            <Text style={styles.rowDescription}>Alert when approaching a Meeqat boundary</Text>
+            <Text style={styles.rowLabel}>{t('meeqatProximityLabel')}</Text>
+            <Text style={styles.rowDescription}>{t('meeqatProximityDesc')}</Text>
           </View>
           <Switch
             value={meeqatEnabled}
@@ -129,8 +138,8 @@ export default function AlertsScreen() {
         </View>
         <View style={[styles.row, { borderBottomWidth: 0 }]}>
           <View style={styles.rowText}>
-            <Text style={styles.rowLabel}>Haram Boundary</Text>
-            <Text style={styles.rowDescription}>Alert when entering or exiting the Haram</Text>
+            <Text style={styles.rowLabel}>{t('haramBoundaryLabel')}</Text>
+            <Text style={styles.rowDescription}>{t('haramBoundaryDesc')}</Text>
           </View>
           <Switch
             value={haramEnabled}
@@ -142,8 +151,8 @@ export default function AlertsScreen() {
 
       {/* Threshold */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Meeqat Alert Distance</Text>
-        <Text style={styles.cardDescription}>Alert me when I am this close to a Meeqat:</Text>
+        <Text style={styles.cardTitle}>{t('meeqatDistanceTitle')}</Text>
+        <Text style={styles.cardDescription}>{t('meeqatDistanceDesc')}</Text>
         <View style={styles.thresholdRow}>
           {THRESHOLDS.map(km => (
             <TouchableOpacity
@@ -152,7 +161,30 @@ export default function AlertsScreen() {
               onPress={() => handleThreshold(km)}
             >
               <Text style={[styles.thresholdBtnText, threshold === km && styles.thresholdBtnTextActive]}>
-                {km} km
+                {t('thresholdOption', { km })}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Language */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{t('languageTitle')}</Text>
+        <Text style={styles.cardDescription}>{t('languageDesc')}</Text>
+        <View style={styles.thresholdRow}>
+          {([
+            ['system', t('languageSystem')],
+            ['en', t('languageEnglish')],
+            ['ar', t('languageArabic')],
+          ] as [LocalePreference, string][]).map(([pref, label]) => (
+            <TouchableOpacity
+              key={pref}
+              style={[styles.thresholdBtn, preference === pref && styles.thresholdBtnActive]}
+              onPress={() => handleLanguageChange(pref)}
+            >
+              <Text style={[styles.thresholdBtnText, preference === pref && styles.thresholdBtnTextActive]}>
+                {label}
               </Text>
             </TouchableOpacity>
           ))}
@@ -162,26 +194,20 @@ export default function AlertsScreen() {
       {/* Battery optimization */}
       {Platform.OS === 'android' && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Battery Optimization</Text>
-          <Text style={styles.cardDescription}>
-            Some phone manufacturers stop background tracking to save battery. If alerts stop
-            arriving while the app is closed, find Hajj Proximity in this list and set it to
-            "Don't optimize".
-          </Text>
+          <Text style={styles.cardTitle}>{t('batteryTitle')}</Text>
+          <Text style={styles.cardDescription}>{t('batteryDesc')}</Text>
           <TouchableOpacity style={styles.secondaryBtn} onPress={openBatterySettings}>
-            <Text style={styles.secondaryBtnText}>Open Battery Settings</Text>
+            <Text style={styles.secondaryBtnText}>{t('openBatterySettings')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {/* Reset */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Reset Alerts</Text>
-        <Text style={styles.cardDescription}>
-          Once a Meeqat alert fires, it won't repeat until you reset. Use this if you want to be alerted again.
-        </Text>
+        <Text style={styles.cardTitle}>{t('resetAlertsTitle')}</Text>
+        <Text style={styles.cardDescription}>{t('resetAlertsDesc')}</Text>
         <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
-          <Text style={styles.resetBtnText}>Reset All Alerts</Text>
+          <Text style={styles.resetBtnText}>{t('resetAllAlerts')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

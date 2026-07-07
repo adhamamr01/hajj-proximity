@@ -7,8 +7,10 @@ import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
 import { TILE_URL, TILE_ATTRIBUTION, TILE_CACHE_PATH, TILE_CACHE_MAX_AGE_SECONDS } from '../utils/tiles'
 import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints } from '../utils/geo'
 import { HARAM_POLYGON } from '../data/haram'
+import { useTranslation } from '../i18n/I18nProvider'
 
 export default function MapScreen() {
+  const { t, locale } = useTranslation()
   const mapRef = useRef<MapView>(null)
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [nearestMeeqat, setNearestMeeqat] = useState<{ name: string; dist: number } | null>(null)
@@ -55,7 +57,10 @@ export default function MapScreen() {
           setInsideHaram(isInsidePolygon(pos, HARAM_POLYGON))
 
           const nearest = MEEQAT_POINTS
-            .map(m => ({ name: m.name.split(' (')[0], dist: distKm(pos, [m.lat, m.lng]) }))
+            .map(m => ({
+              name: (locale === 'ar' ? m.nameAr : m.name).split(' (')[0],
+              dist: distKm(pos, [m.lat, m.lng]),
+            }))
             .sort((a, b) => a.dist - b.dist)[0]
           setNearestMeeqat(nearest)
         },
@@ -64,7 +69,7 @@ export default function MapScreen() {
 
     start()
     return () => { subscription?.remove() }
-  }, [])
+  }, [locale])
 
   const centerOnUser = () => {
     if (!userLocation) return
@@ -80,12 +85,10 @@ export default function MapScreen() {
     return (
       <View style={styles.denied}>
         <Ionicons name="location-outline" size={48} color="#ccc" />
-        <Text style={styles.deniedTitle}>Location Access Required</Text>
-        <Text style={styles.deniedBody}>
-          Enable location permission in Settings to see your position and distances to Meeqat points.
-        </Text>
+        <Text style={styles.deniedTitle}>{t('locationAccessRequiredTitle')}</Text>
+        <Text style={styles.deniedBody}>{t('mapPermissionDeniedBody')}</Text>
         <TouchableOpacity style={styles.deniedBtn} onPress={() => Linking.openSettings()}>
-          <Text style={styles.deniedBtnText}>Open Settings</Text>
+          <Text style={styles.deniedBtnText}>{t('openSettings')}</Text>
         </TouchableOpacity>
       </View>
     )
@@ -111,7 +114,7 @@ export default function MapScreen() {
         {/* Makkah marker */}
         <Marker
           coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}
-          title="Makkah al-Mukarramah"
+          title={t('makkahMarkerTitle')}
         />
 
         {/* Meeqat markers */}
@@ -119,8 +122,8 @@ export default function MapScreen() {
           <Marker
             key={point.id}
             coordinate={{ latitude: point.lat, longitude: point.lng }}
-            title={point.name.split(' (')[0]}
-            description={`${point.distance} from Makkah · ${point.forPilgrims}`}
+            title={(locale === 'ar' ? point.nameAr : point.name).split(' (')[0]}
+            description={`${t('distanceFromMakkah', { distance: point.distance })} · ${locale === 'ar' ? point.forPilgrimsAr : point.forPilgrims}`}
             pinColor={point.color}
           />
         ))}
@@ -142,13 +145,13 @@ export default function MapScreen() {
       {/* Status banner */}
       <View style={[styles.banner, insideHaram && styles.bannerHaram]}>
         {insideHaram ? (
-          <Text style={styles.bannerText}>You are inside the Haram boundary</Text>
+          <Text style={styles.bannerText}>{t('insideHaramBanner')}</Text>
         ) : nearestMeeqat ? (
           <Text style={styles.bannerText}>
-            Nearest Meeqat: {nearestMeeqat.name} · {Math.round(nearestMeeqat.dist)} km
+            {t('nearestMeeqatBanner', { name: nearestMeeqat.name, km: Math.round(nearestMeeqat.dist) })}
           </Text>
         ) : (
-          <Text style={styles.bannerText}>Locating…</Text>
+          <Text style={styles.bannerText}>{t('locating')}</Text>
         )}
       </View>
 

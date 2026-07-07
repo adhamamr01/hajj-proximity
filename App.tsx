@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar'
 import * as Notifications from 'expo-notifications'
 import { Ionicons } from '@expo/vector-icons'
 import * as Sentry from '@sentry/react-native'
+import { I18nProvider, useTranslation } from './src/i18n/I18nProvider'
 import MapScreen from './src/screens/MapScreen'
 import HaramScreen from './src/screens/HaramScreen'
 import AlertsScreen from './src/screens/AlertsScreen'
@@ -22,7 +23,9 @@ if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   })
 }
 
-function App() {
+function AppNavigator() {
+  const { t } = useTranslation()
+
   // Navigate to the relevant tab when user taps a notification
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener(response => {
@@ -59,25 +62,33 @@ function App() {
         <Tab.Screen
           name="Map"
           component={MapScreen}
-          options={{ title: 'Meeqat Points', tabBarLabel: 'Map' }}
+          options={{ title: t('tabMapTitle'), tabBarLabel: t('tabMapLabel') }}
         />
         <Tab.Screen
           name="Haram"
           component={HaramScreen}
-          options={{ title: 'Haram Boundary', tabBarLabel: 'Haram' }}
+          options={{ title: t('tabHaramTitle'), tabBarLabel: t('tabHaramLabel') }}
         />
         <Tab.Screen
           name="Alerts"
           component={AlertsScreen}
-          options={{ title: 'Alert Settings', tabBarLabel: 'Alerts' }}
+          options={{ title: t('tabAlertsTitle'), tabBarLabel: t('tabAlertsLabel') }}
         />
         <Tab.Screen
           name="Checklist"
           component={ChecklistScreen}
-          options={{ title: 'Ihram Checklist', tabBarLabel: 'Checklist' }}
+          options={{ title: t('tabChecklistTitle'), tabBarLabel: t('tabChecklistLabel') }}
         />
       </Tab.Navigator>
     </NavigationContainer>
+  )
+}
+
+function App() {
+  return (
+    <I18nProvider>
+      <AppNavigator />
+    </I18nProvider>
   )
 }
 

@@ -1,26 +1,29 @@
 import { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useTranslation } from '../i18n/I18nProvider'
+import { TranslationKey } from '../i18n/translations'
 
 interface ChecklistItem {
   id: string
-  text: string
-  detail?: string
+  textKey: TranslationKey
+  detailKey: TranslationKey
 }
 
 const ITEMS: ChecklistItem[] = [
-  { id: '1', text: 'Perform Ghusl (full bath)', detail: 'Cleanse yourself before entering the state of Ihram.' },
-  { id: '2', text: 'Put on Ihram garments', detail: 'Men: two white unstitched cloths. Women: any modest clothing covering the body.' },
-  { id: '3', text: 'Apply no perfume after Ihram', detail: 'Perfume is prohibited once Ihram is worn.' },
-  { id: '4', text: 'Perform two Rakaat of prayer', detail: 'Pray two optional units of prayer, preferably with Surah Al-Kafirun and Al-Ikhlas.' },
-  { id: '5', text: 'Make the Niyyah (intention)', detail: 'State your intention for Hajj or Umrah at the Meeqat.' },
-  { id: '6', text: 'Recite the Talbiyah', detail: '"Labbayk Allahumma Labbayk…" — continue reciting until you reach Makkah.' },
-  { id: '7', text: 'Avoid prohibited acts', detail: 'No cutting hair/nails, covering head (men), wearing sewn clothes (men), sexual relations, or hunting.' },
+  { id: '1', textKey: 'checklistItem1', detailKey: 'checklistItem1Detail' },
+  { id: '2', textKey: 'checklistItem2', detailKey: 'checklistItem2Detail' },
+  { id: '3', textKey: 'checklistItem3', detailKey: 'checklistItem3Detail' },
+  { id: '4', textKey: 'checklistItem4', detailKey: 'checklistItem4Detail' },
+  { id: '5', textKey: 'checklistItem5', detailKey: 'checklistItem5Detail' },
+  { id: '6', textKey: 'checklistItem6', detailKey: 'checklistItem6Detail' },
+  { id: '7', textKey: 'checklistItem7', detailKey: 'checklistItem7Detail' },
 ]
 
 const STORAGE_KEY = 'ihram_checklist'
 
 export default function ChecklistScreen() {
+  const { t } = useTranslation()
   const [checked, setChecked] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -37,10 +40,10 @@ export default function ChecklistScreen() {
   }
 
   const reset = () => {
-    Alert.alert('Reset Checklist', 'Clear all checkmarks?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('resetChecklistTitle'), t('resetChecklistBody'), [
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: 'Reset', style: 'destructive', onPress: async () => {
+        text: t('reset'), style: 'destructive', onPress: async () => {
           setChecked(new Set())
           await AsyncStorage.removeItem(STORAGE_KEY)
         },
@@ -53,13 +56,13 @@ export default function ChecklistScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Before Crossing the Meeqat</Text>
-        <Text style={styles.headerSub}>Complete these steps before entering the state of Ihram.</Text>
+        <Text style={styles.headerTitle}>{t('checklistHeaderTitle')}</Text>
+        <Text style={styles.headerSub}>{t('checklistHeaderSub')}</Text>
       </View>
 
       {allDone && (
         <View style={styles.completeBanner}>
-          <Text style={styles.completeText}>You are ready to cross the Meeqat. Labbayk Allahumma Labbayk!</Text>
+          <Text style={styles.completeText}>{t('checklistComplete')}</Text>
         </View>
       )}
 
@@ -76,17 +79,15 @@ export default function ChecklistScreen() {
               {done && <Text style={styles.checkmark}>✓</Text>}
             </View>
             <View style={styles.itemText}>
-              <Text style={[styles.itemLabel, done && styles.itemLabelDone]}>{item.text}</Text>
-              {item.detail && (
-                <Text style={styles.itemDetail}>{item.detail}</Text>
-              )}
+              <Text style={[styles.itemLabel, done && styles.itemLabelDone]}>{t(item.textKey)}</Text>
+              <Text style={styles.itemDetail}>{t(item.detailKey)}</Text>
             </View>
           </TouchableOpacity>
         )
       })}
 
       <TouchableOpacity style={styles.resetBtn} onPress={reset}>
-        <Text style={styles.resetBtnText}>Reset Checklist</Text>
+        <Text style={styles.resetBtnText}>{t('resetChecklistButton')}</Text>
       </TouchableOpacity>
     </ScrollView>
   )

@@ -7,10 +7,12 @@ import { HARAM_POLYGON } from '../data/haram'
 import { MAKKAH } from '../data/meeqat'
 import { isInsidePolygon } from '../utils/geo'
 import { TILE_URL, TILE_ATTRIBUTION, TILE_CACHE_PATH, TILE_CACHE_MAX_AGE_SECONDS } from '../utils/tiles'
+import { useTranslation } from '../i18n/I18nProvider'
 
 const HARAM_COORDS = HARAM_POLYGON.map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
 
 export default function HaramScreen() {
+  const { t } = useTranslation()
   const mapRef = useRef<MapView>(null)
   const [insideHaram, setInsideHaram] = useState(false)
   const [hasLocation, setHasLocation] = useState(false)
@@ -62,12 +64,10 @@ export default function HaramScreen() {
     return (
       <View style={styles.denied}>
         <Ionicons name="location-outline" size={48} color="#ccc" />
-        <Text style={styles.deniedTitle}>Location Access Required</Text>
-        <Text style={styles.deniedBody}>
-          Enable location permission in Settings to detect whether you are inside the Haram boundary.
-        </Text>
+        <Text style={styles.deniedTitle}>{t('locationAccessRequiredTitle')}</Text>
+        <Text style={styles.deniedBody}>{t('haramPermissionDeniedBody')}</Text>
         <TouchableOpacity style={styles.deniedBtn} onPress={() => Linking.openSettings()}>
-          <Text style={styles.deniedBtnText}>Open Settings</Text>
+          <Text style={styles.deniedBtnText}>{t('openSettings')}</Text>
         </TouchableOpacity>
       </View>
     )
@@ -98,8 +98,8 @@ export default function HaramScreen() {
         {/* Makkah marker */}
         <Marker
           coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}
-          title="Masjid al-Haram"
-          description="Center of the Haram sanctuary"
+          title={t('haramMarkerTitle')}
+          description={t('haramMarkerDescription')}
         />
 
         {/* Haram boundary polygon */}
@@ -116,11 +116,11 @@ export default function HaramScreen() {
       {/* Status banner */}
       <View style={[styles.banner, insideHaram ? styles.bannerInside : styles.bannerOutside]}>
         {!hasLocation ? (
-          <Text style={styles.bannerText}>Locating…</Text>
+          <Text style={styles.bannerText}>{t('locating')}</Text>
         ) : insideHaram ? (
-          <Text style={styles.bannerText}>You are inside the Haram boundary</Text>
+          <Text style={styles.bannerText}>{t('insideHaramBanner')}</Text>
         ) : (
-          <Text style={styles.bannerText}>You are outside the Haram boundary</Text>
+          <Text style={styles.bannerText}>{t('outsideHaramBanner')}</Text>
         )}
       </View>
 
@@ -128,11 +128,11 @@ export default function HaramScreen() {
       {/* Buttons */}
       <View style={styles.btnGroup}>
         <TouchableOpacity style={styles.btn} onPress={centerOnHaram}>
-          <Text style={styles.btnText}>🕋 Makkah</Text>
+          <Text style={styles.btnText}>{t('makkahButton')}</Text>
         </TouchableOpacity>
         {hasLocation && (
           <TouchableOpacity style={styles.btn} onPress={centerOnUser}>
-            <Text style={styles.btnText}>⊕ My Location</Text>
+            <Text style={styles.btnText}>{t('myLocationButton')}</Text>
           </TouchableOpacity>
         )}
       </View>

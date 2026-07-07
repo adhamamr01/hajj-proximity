@@ -85,6 +85,7 @@ Crash reporting is wired up via `@sentry/react-native` but disabled until a DSN 
 ```
 src/
   data/         # Meeqat coordinates and Haram polygon (static, bundled)
+  i18n/         # English/Arabic translations, locale resolution, RTL
   screens/      # MapScreen, HaramScreen, AlertsScreen, ChecklistScreen
   services/     # LocationService (background tracking), NotificationService
   utils/        # geo.ts — haversine, bearing, arc, polygon utilities
