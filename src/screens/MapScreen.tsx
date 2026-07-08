@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, MapType } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
@@ -15,6 +15,7 @@ export default function MapScreen() {
   const [nearestMeeqat, setNearestMeeqat] = useState<{ name: string; dist: number } | null>(null)
   const [insideHaram, setInsideHaram] = useState(false)
   const [permissionDenied, setPermissionDenied] = useState(false)
+  const [mapType, setMapType] = useState<MapType>('standard')
 
   // Compute arcs — same algorithm as the website
   const arcs = useMemo(() => {
@@ -99,6 +100,7 @@ export default function MapScreen() {
         ref={mapRef}
         style={styles.map}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        mapType={mapType}
         initialRegion={{ latitude: 22.5, longitude: 40.0, latitudeDelta: 8, longitudeDelta: 8 }}
         showsUserLocation
         showsMyLocationButton={false}
@@ -149,6 +151,16 @@ export default function MapScreen() {
       <TouchableOpacity style={styles.centerBtn} onPress={centerOnUser}>
         <Text style={styles.centerBtnText}>⊕</Text>
       </TouchableOpacity>
+
+      {/* Satellite/hybrid toggle */}
+      <TouchableOpacity
+        style={styles.mapTypeBtn}
+        onPress={() => setMapType(prev => (prev === 'hybrid' ? 'standard' : 'hybrid'))}
+      >
+        <Text style={styles.mapTypeBtnText}>
+          {mapType === 'hybrid' ? t('mapViewButton') : t('satelliteViewButton')}
+        </Text>
+      </TouchableOpacity>
     </View>
   )
 }
@@ -191,6 +203,21 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   centerBtnText: { fontSize: 22, color: '#1a5f3f' },
+  mapTypeBtn: {
+    position: 'absolute',
+    bottom: 90,
+    left: 16,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  mapTypeBtnText: { fontSize: 13, fontWeight: '600', color: '#1a5f3f' },
   denied: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   deniedTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', textAlign: 'center' },
   deniedBody: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20 },
