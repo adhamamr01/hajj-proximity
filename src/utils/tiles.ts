@@ -9,5 +9,17 @@ export const TILE_ATTRIBUTION = 'Tiles © Esri'
 // The map only ever shows Makkah, the 5 Meeqat points, and the Haram boundary —
 // a small fixed set of regions, so tiles rarely change and are safe to cache
 // on disk for a long time. This avoids re-fetching from Esri on every visit.
-export const TILE_CACHE_PATH = Paths.cache.uri
 export const TILE_CACHE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60 // 30 days
+
+// Resolved lazily (called from within a component, not at module load) and
+// defensively: Paths.cache is a native-backed getter, and evaluating it at
+// import time — before React has even mounted — previously crashed the app
+// on startup with no error surfaced (import-time throws happen before
+// AppErrorBoundary or any try/catch in index.ts can run).
+export function getTileCachePath(): string | undefined {
+  try {
+    return Paths.cache.uri
+  } catch {
+    return undefined
+  }
+}

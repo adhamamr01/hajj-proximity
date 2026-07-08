@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { HARAM_POLYGON } from '../data/haram'
 import { MAKKAH } from '../data/meeqat'
 import { isInsidePolygon } from '../utils/geo'
-import { TILE_URL, TILE_ATTRIBUTION, TILE_CACHE_PATH, TILE_CACHE_MAX_AGE_SECONDS } from '../utils/tiles'
+import { TILE_URL, TILE_ATTRIBUTION, getTileCachePath, TILE_CACHE_MAX_AGE_SECONDS } from '../utils/tiles'
 import { useTranslation } from '../i18n/I18nProvider'
 
 const HARAM_COORDS = HARAM_POLYGON.map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
@@ -92,7 +92,7 @@ export default function HaramScreen() {
         <UrlTile
           urlTemplate={TILE_URL}
           maximumZ={19}
-          tileCachePath={TILE_CACHE_PATH}
+          tileCachePath={getTileCachePath()}
           tileCacheMaxAge={TILE_CACHE_MAX_AGE_SECONDS}
         />
         {/* Makkah marker */}

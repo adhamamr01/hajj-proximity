@@ -4,7 +4,7 @@ import MapView, { Marker, Polyline, UrlTile, PROVIDER_GOOGLE } from 'react-nativ
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
-import { TILE_URL, TILE_ATTRIBUTION, TILE_CACHE_PATH, TILE_CACHE_MAX_AGE_SECONDS } from '../utils/tiles'
+import { TILE_URL, TILE_ATTRIBUTION, getTileCachePath, TILE_CACHE_MAX_AGE_SECONDS } from '../utils/tiles'
 import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints } from '../utils/geo'
 import { HARAM_POLYGON } from '../data/haram'
 import { useTranslation } from '../i18n/I18nProvider'
@@ -108,7 +108,7 @@ export default function MapScreen() {
         <UrlTile
           urlTemplate={TILE_URL}
           maximumZ={19}
-          tileCachePath={TILE_CACHE_PATH}
+          tileCachePath={getTileCachePath()}
           tileCacheMaxAge={TILE_CACHE_MAX_AGE_SECONDS}
         />
         {/* Makkah marker */}
