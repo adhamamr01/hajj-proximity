@@ -9,8 +9,8 @@ const en = {
   tabMapLabel: 'Map',
   tabHaramTitle: 'Haram Boundary',
   tabHaramLabel: 'Haram',
-  tabAlertsTitle: 'Alert Settings',
-  tabAlertsLabel: 'Alerts',
+  tabAlertsTitle: 'Settings',
+  tabAlertsLabel: 'Settings',
   tabChecklistTitle: 'Ihram Checklist',
   tabChecklistLabel: 'Checklist',
 
@@ -108,8 +108,8 @@ const ar: Record<keyof typeof en, string> = {
   tabMapLabel: 'الخريطة',
   tabHaramTitle: 'حدود الحرم',
   tabHaramLabel: 'الحرم',
-  tabAlertsTitle: 'إعدادات التنبيهات',
-  tabAlertsLabel: 'التنبيهات',
+  tabAlertsTitle: 'الإعدادات',
+  tabAlertsLabel: 'الإعدادات',
   tabChecklistTitle: 'قائمة الإحرام',
   tabChecklistLabel: 'القائمة',
 

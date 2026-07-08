@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   thresholdBtnActive: { borderColor: '#1a5f3f', backgroundColor: '#f0faf4' },
-  thresholdBtnText: { fontSize: 14, fontWeight: '600', color: '#888' },
+  thresholdBtnText: { fontSize: 14, fontWeight: '600', color: '#888', textAlign: 'center' },
   thresholdBtnTextActive: { color: '#1a5f3f' },
   resetBtn: {
     borderWidth: 1.5,

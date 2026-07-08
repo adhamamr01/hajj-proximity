@@ -69,7 +69,7 @@ function AppNavigator() {
             const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
               Map:       'map-outline',
               Haram:     'globe-outline',
-              Alerts:    'notifications-outline',
+              Alerts:    'settings-outline',
               Checklist: 'checkbox-outline',
             }
             return <Ionicons name={icons[route.name]} size={size} color={color} />
