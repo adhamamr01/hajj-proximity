@@ -1,3 +1,8 @@
+// Sentry's Gradle plugin uploads source maps at build time and fails hard
+// if it runs without an org/project — so only include the plugin once
+// those are actually configured (see README's Sentry setup section).
+const sentryConfigured = Boolean(process.env.SENTRY_ORG && process.env.SENTRY_PROJECT)
+
 module.exports = {
   expo: {
     name: 'Hajj Proximity',
@@ -63,13 +68,17 @@ module.exports = {
           color: '#1a5f3f',
         },
       ],
-      [
-        '@sentry/react-native/expo',
-        {
-          organization: process.env.SENTRY_ORG,
-          project: process.env.SENTRY_PROJECT,
-        },
-      ],
+      ...(sentryConfigured
+        ? [
+            [
+              '@sentry/react-native/expo',
+              {
+                organization: process.env.SENTRY_ORG,
+                project: process.env.SENTRY_PROJECT,
+              },
+            ],
+          ]
+        : []),
     ],
     web: {
       favicon: './assets/favicon.png',
