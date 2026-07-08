@@ -11,6 +11,18 @@ import MapScreen from './src/screens/MapScreen'
 import HaramScreen from './src/screens/HaramScreen'
 import AlertsScreen from './src/screens/AlertsScreen'
 import ChecklistScreen from './src/screens/ChecklistScreen'
+import { log, logError } from './src/utils/log'
+
+log('app', 'App.tsx module evaluated')
+
+// Surface fatal JS errors in logcat (`adb logcat -s ReactNativeJS`) even in
+// release builds, where React Native's red box doesn't exist and a fatal
+// error otherwise dies silently.
+const defaultHandler = ErrorUtils.getGlobalHandler()
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  logError('fatal', `unhandled JS error (fatal=${String(isFatal)})`, error)
+  defaultHandler(error, isFatal)
+})
 
 const Tab = createBottomTabNavigator()
 const navigationRef = createNavigationContainerRef()
@@ -26,6 +38,10 @@ if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
 
 function AppNavigator() {
   const { t } = useTranslation()
+
+  useEffect(() => {
+    log('app', 'AppNavigator mounted')
+  }, [])
 
   // Navigate to the relevant tab when user taps a notification
   useEffect(() => {

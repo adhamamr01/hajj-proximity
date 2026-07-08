@@ -5,6 +5,7 @@ import * as Updates from 'expo-updates'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { translations, TranslationKey } from './translations'
 import { resolveLocale, isRTL, Locale, LocalePreference, LANGUAGE_PREFERENCE_KEY } from './locale'
+import { log, logError } from '../utils/log'
 
 interface I18nContextValue {
   locale: Locale
@@ -24,7 +25,41 @@ function interpolate(template: string, params?: Record<string, string | number>)
 }
 
 function getDeviceLocaleCode(): string {
-  return Localization.getLocales()[0]?.languageCode ?? 'en'
+  try {
+    return Localization.getLocales()[0]?.languageCode ?? 'en'
+  } catch (e) {
+    logError('i18n', 'getLocales() threw, falling back to en', e)
+    return 'en'
+  }
+}
+
+// RTL flips require a reload to take effect. Guard so a single app session
+// never reloads more than once — if forceRTL somehow failed to persist,
+// looping reloads would brick the app worse than a wrong layout direction.
+let rtlReloadAttempted = false
+
+async function syncRTL(locale: Locale): Promise<void> {
+  const wantRTL = isRTL(locale)
+  if (wantRTL === I18nManager.isRTL) return
+
+  log('i18n', `RTL mismatch (want ${wantRTL}, have ${I18nManager.isRTL})`)
+  I18nManager.allowRTL(wantRTL)
+  I18nManager.forceRTL(wantRTL)
+
+  if (rtlReloadAttempted) {
+    log('i18n', 'reload already attempted this session, direction applies on next launch')
+    return
+  }
+  rtlReloadAttempted = true
+
+  try {
+    log('i18n', 'reloading app to apply layout direction')
+    await Updates.reloadAsync()
+  } catch (e) {
+    // reloadAsync is unavailable in dev / Expo Go — the flag is persisted
+    // natively, so the correct direction applies on the next full launch.
+    logError('i18n', 'reloadAsync unavailable, direction applies on next launch', e)
+  }
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
@@ -32,31 +67,37 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    log('i18n', 'loading stored language preference')
     AsyncStorage.getItem(LANGUAGE_PREFERENCE_KEY)
       .then(stored => {
-        if (stored === 'en' || stored === 'ar' || stored === 'system') setPreferenceState(stored)
+        log('i18n', `stored preference: ${stored ?? 'none'}`)
+        const pref: LocalePreference =
+          stored === 'en' || stored === 'ar' || stored === 'system' ? stored : 'system'
+        setPreferenceState(pref)
+        // Cold-start RTL sync (used to live in index.ts, but deferring
+        // registerRootComponent behind it caused a startup hang — see index.ts).
+        return syncRTL(resolveLocale(pref, getDeviceLocaleCode()))
       })
-      .catch(() => {
-        // Fall back to 'system' (the initial state) if storage read fails.
+      .catch(e => {
+        logError('i18n', 'failed to load preference, using system default', e)
       })
-      .finally(() => setReady(true))
+      .finally(() => {
+        log('i18n', 'i18n ready')
+        setReady(true)
+      })
   }, [])
 
   const locale = resolveLocale(preference, getDeviceLocaleCode())
 
   const setPreference = useCallback(async (pref: LocalePreference) => {
-    await AsyncStorage.setItem(LANGUAGE_PREFERENCE_KEY, pref)
-    setPreferenceState(pref)
-
-    const nextRTL = isRTL(resolveLocale(pref, getDeviceLocaleCode()))
-    if (nextRTL !== I18nManager.isRTL) {
-      I18nManager.allowRTL(nextRTL)
-      I18nManager.forceRTL(nextRTL)
-      // Layout direction only takes effect after a reload — reloadAsync()
-      // is unavailable in some dev/Expo Go contexts, in which case the
-      // preference is already saved and applies on the next full restart.
-      await Updates.reloadAsync().catch(() => {})
+    log('i18n', `setting preference to ${pref}`)
+    try {
+      await AsyncStorage.setItem(LANGUAGE_PREFERENCE_KEY, pref)
+    } catch (e) {
+      logError('i18n', 'failed to persist preference', e)
     }
+    setPreferenceState(pref)
+    await syncRTL(resolveLocale(pref, getDeviceLocaleCode()))
   }, [])
 
   const t = useCallback(

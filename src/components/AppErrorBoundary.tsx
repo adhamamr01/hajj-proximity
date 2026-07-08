@@ -1,5 +1,6 @@
-import { Component, ReactNode } from 'react'
+import { Component, ErrorInfo, ReactNode } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { logError } from '../utils/log'
 
 interface Props {
   children: ReactNode
@@ -14,6 +15,10 @@ export default class AppErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     return { error }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    logError('boundary', `render crash: ${error.message}`, info.componentStack)
   }
 
   handleReset = () => this.setState({ error: null })
