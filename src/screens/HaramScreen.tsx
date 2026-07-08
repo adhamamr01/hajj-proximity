@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
-import MapView, { Marker, Polygon, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, Polygon, PROVIDER_GOOGLE } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { HARAM_POLYGON } from '../data/haram'
 import { MAKKAH } from '../data/meeqat'
 import { isInsidePolygon } from '../utils/geo'
-import { TILE_URL, TILE_ATTRIBUTION, getTileCachePath, TILE_CACHE_MAX_AGE_SECONDS } from '../utils/tiles'
 import { useTranslation } from '../i18n/I18nProvider'
 
 const HARAM_COORDS = HARAM_POLYGON.map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
@@ -79,7 +78,6 @@ export default function HaramScreen() {
         ref={mapRef}
         style={styles.map}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-        mapType="none"
         initialRegion={{
           latitude: MAKKAH[0],
           longitude: MAKKAH[1],
@@ -89,12 +87,6 @@ export default function HaramScreen() {
         showsUserLocation
         showsMyLocationButton={false}
       >
-        <UrlTile
-          urlTemplate={TILE_URL}
-          maximumZ={19}
-          tileCachePath={getTileCachePath()}
-          tileCacheMaxAge={TILE_CACHE_MAX_AGE_SECONDS}
-        />
         {/* Makkah marker */}
         <Marker
           coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}
@@ -110,8 +102,6 @@ export default function HaramScreen() {
           fillColor="rgba(34, 197, 94, 0.25)"
         />
       </MapView>
-
-      <Text style={styles.attribution}>{TILE_ATTRIBUTION}</Text>
 
       {/* Status banner */}
       <View style={[styles.banner, insideHaram ? styles.bannerInside : styles.bannerOutside]}>
@@ -179,15 +169,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   btnText: { fontSize: 13, fontWeight: '600', color: '#1a5f3f' },
-  attribution: {
-    position: 'absolute',
-    bottom: 4,
-    left: 8,
-    fontSize: 10,
-    color: 'rgba(0,0,0,0.5)',
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    paddingHorizontal: 4,
-  },
   disclaimer: {
     position: 'absolute',
     top: 12,

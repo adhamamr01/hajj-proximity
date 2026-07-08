@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
-import MapView, { Marker, Polyline, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
-import { TILE_URL, TILE_ATTRIBUTION, getTileCachePath, TILE_CACHE_MAX_AGE_SECONDS } from '../utils/tiles'
 import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints } from '../utils/geo'
 import { HARAM_POLYGON } from '../data/haram'
 import { useTranslation } from '../i18n/I18nProvider'
@@ -100,17 +99,10 @@ export default function MapScreen() {
         ref={mapRef}
         style={styles.map}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-        mapType="none"
         initialRegion={{ latitude: 22.5, longitude: 40.0, latitudeDelta: 8, longitudeDelta: 8 }}
         showsUserLocation
         showsMyLocationButton={false}
       >
-        <UrlTile
-          urlTemplate={TILE_URL}
-          maximumZ={19}
-          tileCachePath={getTileCachePath()}
-          tileCacheMaxAge={TILE_CACHE_MAX_AGE_SECONDS}
-        />
         {/* Makkah marker */}
         <Marker
           coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}
@@ -139,8 +131,6 @@ export default function MapScreen() {
           />
         ))}
       </MapView>
-
-      <Text style={styles.attribution}>{TILE_ATTRIBUTION}</Text>
 
       {/* Status banner */}
       <View style={[styles.banner, insideHaram && styles.bannerHaram]}>
@@ -201,15 +191,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   centerBtnText: { fontSize: 22, color: '#1a5f3f' },
-  attribution: {
-    position: 'absolute',
-    bottom: 4,
-    left: 8,
-    fontSize: 10,
-    color: 'rgba(0,0,0,0.5)',
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    paddingHorizontal: 4,
-  },
   denied: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   deniedTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', textAlign: 'center' },
   deniedBody: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20 },
