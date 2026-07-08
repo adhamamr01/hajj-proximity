@@ -210,6 +210,12 @@ export default function AlertsScreen() {
           <Text style={styles.resetBtnText}>{t('resetAllAlerts')}</Text>
         </TouchableOpacity>
       </View>
+
+      {/* About */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{t('aboutTitle')}</Text>
+        <Text style={styles.cardDescription}>{t('aboutMadhhabNotice')}</Text>
+      </View>
     </ScrollView>
   )
 }

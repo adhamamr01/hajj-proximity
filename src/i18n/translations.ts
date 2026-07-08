@@ -67,6 +67,8 @@ const en = {
   restartRequiredTitle: 'Restart Required',
   restartRequiredBody: 'The app needs to restart to apply the new language layout.',
   restartNow: 'Restart Now',
+  aboutTitle: 'About',
+  aboutMadhhabNotice: "Rulings and practices described in this app follow the Shafi'i school of Islamic jurisprudence (madhhab). Guidance may differ slightly according to other schools of thought — consult a knowledgeable scholar for your own madhhab if unsure.",
 
   // ChecklistScreen
   checklistHeaderTitle: 'Before Crossing the Meeqat',
@@ -163,6 +165,8 @@ const ar: Record<keyof typeof en, string> = {
   restartRequiredTitle: 'إعادة التشغيل مطلوبة',
   restartRequiredBody: 'يحتاج التطبيق إلى إعادة التشغيل لتطبيق تخطيط اللغة الجديد.',
   restartNow: 'إعادة التشغيل الآن',
+  aboutTitle: 'حول التطبيق',
+  aboutMadhhabNotice: 'الأحكام والممارسات الواردة في هذا التطبيق تتبع المذهب الشافعي. قد تختلف الإرشادات قليلاً حسب المذاهب الأخرى — يُرجى الرجوع إلى أهل العلم فيما يخص مذهبكم عند الحاجة.',
 
   checklistHeaderTitle: 'قبل عبور الميقات',
   checklistHeaderSub: 'أكمل هذه الخطوات قبل الدخول في حالة الإحرام.',
