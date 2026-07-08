@@ -9,14 +9,22 @@ import { resolveLocale, isRTL, LANGUAGE_PREFERENCE_KEY } from './src/i18n/locale
 // cold start already has the correct layout direction. (Runtime toggles are
 // handled separately in I18nProvider.setPreference, which triggers a reload.)
 async function bootstrap() {
-  const stored = await AsyncStorage.getItem(LANGUAGE_PREFERENCE_KEY)
-  const preference = stored === 'en' || stored === 'ar' ? stored : 'system'
-  const deviceLocaleCode = Localization.getLocales()[0]?.languageCode ?? 'en'
-  const rtl = isRTL(resolveLocale(preference, deviceLocaleCode))
+  // If reading the stored preference or the device locale throws for any
+  // reason, the app must still boot (falling back to English/LTR) rather
+  // than leaving registerRootComponent() uncalled — that would strand the
+  // user on a black screen after the splash with no error ever surfacing.
+  try {
+    const stored = await AsyncStorage.getItem(LANGUAGE_PREFERENCE_KEY)
+    const preference = stored === 'en' || stored === 'ar' ? stored : 'system'
+    const deviceLocaleCode = Localization.getLocales()[0]?.languageCode ?? 'en'
+    const rtl = isRTL(resolveLocale(preference, deviceLocaleCode))
 
-  if (rtl !== I18nManager.isRTL) {
-    I18nManager.allowRTL(rtl)
-    I18nManager.forceRTL(rtl)
+    if (rtl !== I18nManager.isRTL) {
+      I18nManager.allowRTL(rtl)
+      I18nManager.forceRTL(rtl)
+    }
+  } catch {
+    // Fall back to whatever RTL state the native side already has.
   }
 
   // registerRootComponent calls AppRegistry.registerComponent('main', () => App);

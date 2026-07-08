@@ -32,10 +32,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    AsyncStorage.getItem(LANGUAGE_PREFERENCE_KEY).then(stored => {
-      if (stored === 'en' || stored === 'ar' || stored === 'system') setPreferenceState(stored)
-      setReady(true)
-    })
+    AsyncStorage.getItem(LANGUAGE_PREFERENCE_KEY)
+      .then(stored => {
+        if (stored === 'en' || stored === 'ar' || stored === 'system') setPreferenceState(stored)
+      })
+      .catch(() => {
+        // Fall back to 'system' (the initial state) if storage read fails.
+      })
+      .finally(() => setReady(true))
   }, [])
 
   const locale = resolveLocale(preference, getDeviceLocaleCode())

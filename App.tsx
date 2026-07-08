@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications'
 import { Ionicons } from '@expo/vector-icons'
 import * as Sentry from '@sentry/react-native'
 import { I18nProvider, useTranslation } from './src/i18n/I18nProvider'
+import AppErrorBoundary from './src/components/AppErrorBoundary'
 import MapScreen from './src/screens/MapScreen'
 import HaramScreen from './src/screens/HaramScreen'
 import AlertsScreen from './src/screens/AlertsScreen'
@@ -86,9 +87,11 @@ function AppNavigator() {
 
 function App() {
   return (
-    <I18nProvider>
-      <AppNavigator />
-    </I18nProvider>
+    <AppErrorBoundary>
+      <I18nProvider>
+        <AppNavigator />
+      </I18nProvider>
+    </AppErrorBoundary>
   )
 }
 
