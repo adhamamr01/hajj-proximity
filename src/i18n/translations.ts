@@ -29,6 +29,8 @@ const en = {
   outsideHaramBanner: 'You are outside the Haram boundary',
   makkahButton: '🕋 Makkah',
   myLocationButton: '⊕ My Location',
+  satelliteViewButton: '🛰️ Satellite',
+  mapViewButton: '🗺️ Map',
 
   // AlertsScreen
   backgroundTrackingTitle: 'Background Tracking',
@@ -124,6 +126,8 @@ const ar: Record<keyof typeof en, string> = {
   outsideHaramBanner: 'أنت خارج حدود الحرم',
   makkahButton: '🕋 مكة',
   myLocationButton: '⊕ موقعي',
+  satelliteViewButton: '🛰️ القمر الصناعي',
+  mapViewButton: '🗺️ الخريطة',
 
   backgroundTrackingTitle: 'التتبع في الخلفية',
   backgroundTrackingDesc: 'أبقِ هذا مفعّلاً أثناء السفر لتلقي التنبيهات حتى عند إغلاق التطبيق.',

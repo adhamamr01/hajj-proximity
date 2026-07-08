@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
-import MapView, { Marker, Polygon, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, Polygon, PROVIDER_GOOGLE, MapType } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { HARAM_POLYGON } from '../data/haram'
@@ -17,6 +17,7 @@ export default function HaramScreen() {
   const [hasLocation, setHasLocation] = useState(false)
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [permissionDenied, setPermissionDenied] = useState(false)
+  const [mapType, setMapType] = useState<MapType>('standard')
 
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null
@@ -78,6 +79,7 @@ export default function HaramScreen() {
         ref={mapRef}
         style={styles.map}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        mapType={mapType}
         initialRegion={{
           latitude: MAKKAH[0],
           longitude: MAKKAH[1],
@@ -125,6 +127,14 @@ export default function HaramScreen() {
             <Text style={styles.btnText}>{t('myLocationButton')}</Text>
           </TouchableOpacity>
         )}
+        <TouchableOpacity
+          style={styles.btn}
+          onPress={() => setMapType(prev => (prev === 'hybrid' ? 'standard' : 'hybrid'))}
+        >
+          <Text style={styles.btnText}>
+            {mapType === 'hybrid' ? t('mapViewButton') : t('satelliteViewButton')}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   )
