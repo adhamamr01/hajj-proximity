@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE, MapType } from 'react-native-maps'
+import MapView, { Marker, Polyline, Polygon, Callout, PROVIDER_GOOGLE, MapType } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
 import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints } from '../utils/geo'
 import { HARAM_POLYGON } from '../data/haram'
 import { useTranslation } from '../i18n/I18nProvider'
+
+const HARAM_COORDS = HARAM_POLYGON.map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
 
 export default function MapScreen() {
   const { t, locale } = useTranslation()
@@ -41,6 +43,20 @@ export default function MapScreen() {
       }
     })
   }, [])
+
+  // Straight segments joining each arc's end to the next arc's start — the
+  // two points share a bearing (the sector boundary) but sit at different
+  // radii, so connecting them closes the arcs into one continuous polygon.
+  const connectors = useMemo(() => {
+    const n = arcs.length
+    return arcs.map((arc, i) => {
+      const next = arcs[(i + 1) % n]
+      return {
+        id: `${arc.id}-${next.id}`,
+        coords: [arc.coords[arc.coords.length - 1], next.coords[0]],
+      }
+    })
+  }, [arcs])
 
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null
@@ -116,10 +132,24 @@ export default function MapScreen() {
           <Marker
             key={point.id}
             coordinate={{ latitude: point.lat, longitude: point.lng }}
-            title={(locale === 'ar' ? point.nameAr : point.name).split(' (')[0]}
-            description={`${t('distanceFromMakkah', { distance: point.distance })} · ${locale === 'ar' ? point.forPilgrimsAr : point.forPilgrims}`}
             pinColor={point.color}
-          />
+          >
+            {/* Custom callout: the default OS callout truncates the
+                description to one line, cutting off most of the text. */}
+            <Callout tooltip={false} style={styles.callout}>
+              <View style={styles.calloutContent}>
+                <Text style={styles.calloutTitle}>
+                  {(locale === 'ar' ? point.nameAr : point.name).split(' (')[0]}
+                </Text>
+                <Text style={styles.calloutText}>
+                  {t('distanceFromMakkah', { distance: point.distance })}
+                </Text>
+                <Text style={styles.calloutText}>
+                  {locale === 'ar' ? point.forPilgrimsAr : point.forPilgrims}
+                </Text>
+              </View>
+            </Callout>
+          </Marker>
         ))}
 
         {/* Sector arcs */}
@@ -132,6 +162,24 @@ export default function MapScreen() {
             lineDashPattern={[8, 5]}
           />
         ))}
+
+        {/* Connectors closing the arcs into one continuous boundary */}
+        {connectors.map(c => (
+          <Polyline
+            key={`connector-${c.id}`}
+            coordinates={c.coords}
+            strokeColor="#d4af37"
+            strokeWidth={2}
+          />
+        ))}
+
+        {/* Haram boundary */}
+        <Polygon
+          coordinates={HARAM_COORDS}
+          strokeColor="#16a34a"
+          strokeWidth={3}
+          fillColor="rgba(34, 197, 94, 0.2)"
+        />
       </MapView>
 
       {/* Status banner */}
@@ -218,6 +266,10 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   mapTypeBtnText: { fontSize: 13, fontWeight: '600', color: '#1a5f3f' },
+  callout: { width: 220 },
+  calloutContent: { padding: 4 },
+  calloutTitle: { fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
+  calloutText: { fontSize: 12, color: '#555', lineHeight: 17 },
   denied: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   deniedTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', textAlign: 'center' },
   deniedBody: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20 },
