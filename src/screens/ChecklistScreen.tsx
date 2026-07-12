@@ -11,13 +11,15 @@ interface ChecklistItem {
 }
 
 const ITEMS: ChecklistItem[] = [
-  { id: '1', textKey: 'checklistItem1', detailKey: 'checklistItem1Detail' },
-  { id: '2', textKey: 'checklistItem2', detailKey: 'checklistItem2Detail' },
-  { id: '3', textKey: 'checklistItem3', detailKey: 'checklistItem3Detail' },
-  { id: '4', textKey: 'checklistItem4', detailKey: 'checklistItem4Detail' },
-  { id: '5', textKey: 'checklistItem5', detailKey: 'checklistItem5Detail' },
-  { id: '6', textKey: 'checklistItem6', detailKey: 'checklistItem6Detail' },
-  { id: '7', textKey: 'checklistItem7', detailKey: 'checklistItem7Detail' },
+  { id: '1', textKey: 'checklistItemHair', detailKey: 'checklistItemHairDetail' },
+  { id: '2', textKey: 'checklistItem1', detailKey: 'checklistItem1Detail' },
+  { id: '3', textKey: 'checklistItemPerfume', detailKey: 'checklistItemPerfumeDetail' },
+  { id: '4', textKey: 'checklistItem2', detailKey: 'checklistItem2Detail' },
+  { id: '5', textKey: 'checklistItem3', detailKey: 'checklistItem3Detail' },
+  { id: '6', textKey: 'checklistItem4', detailKey: 'checklistItem4Detail' },
+  { id: '7', textKey: 'checklistItem5', detailKey: 'checklistItem5Detail' },
+  { id: '8', textKey: 'checklistItem6', detailKey: 'checklistItem6Detail' },
+  { id: '9', textKey: 'checklistItem7', detailKey: 'checklistItem7Detail' },
 ]
 
 const STORAGE_KEY = 'ihram_checklist'
