@@ -43,3 +43,7 @@ app.json
 # generated native folders
 /ios
 /android
+
+# local eas build --local output
+*.apk
+*.aab
