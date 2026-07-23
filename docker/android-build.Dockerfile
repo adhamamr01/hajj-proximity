@@ -32,4 +32,17 @@ RUN mkdir -p "${ANDROID_HOME}/cmdline-tools" \
 
 RUN npm install -g eas-cli
 
+# Global Gradle JVM settings (GRADLE_USER_HOME-level, applies to every build
+# regardless of what the eas-prebuild-generated project's own gradle.properties
+# contains). The default here — 512MB metaspace — is too small for this
+# project's Kotlin annotation processing (KSP) step, which OOMs with
+# "java.lang.OutOfMemoryError: Metaspace" during :expo-updates:kspReleaseKotlin.
+# Also cap parallel workers: this container's host has many CPU cores, and
+# Gradle defaulting to one worker per core multiplies per-worker JVM/metaspace
+# overhead, which is the likely real driver of the memory pressure seen here.
+RUN mkdir -p /root/.gradle && printf '%s\n' \
+    'org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m' \
+    'org.gradle.workers.max=3' \
+    > /root/.gradle/gradle.properties
+
 WORKDIR /app
