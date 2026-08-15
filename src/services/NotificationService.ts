@@ -1,5 +1,9 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
+import * as Localization from 'expo-localization'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { translations } from '../i18n/translations'
+import { resolveLocale, LANGUAGE_PREFERENCE_KEY } from '../i18n/locale'
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -27,11 +31,24 @@ export async function requestNotificationPermission(): Promise<boolean> {
 
 const IMMEDIATE_TRIGGER = Platform.OS === 'android' ? { channelId: 'proximity' } : null
 
+// This module runs from a background task with no React tree, so it can't
+// use useTranslation() — it reads the same stored preference directly.
+async function getNotificationStrings() {
+  const stored = await AsyncStorage.getItem(LANGUAGE_PREFERENCE_KEY)
+  const preference = stored === 'en' || stored === 'ar' ? stored : 'system'
+  const deviceLocaleCode = Localization.getLocales()[0]?.languageCode ?? 'en'
+  const locale = resolveLocale(preference, deviceLocaleCode)
+  return translations[locale]
+}
+
 export async function sendMeeqatAlert(meeqatName: string, distanceKm: number): Promise<void> {
+  const strings = await getNotificationStrings()
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'Approaching Meeqat',
-      body: `You are ${Math.round(distanceKm)} km from ${meeqatName}. Prepare your Ihram.`,
+      title: strings.notifMeeqatTitle,
+      body: strings.notifMeeqatBody
+        .replace('{km}', String(Math.round(distanceKm)))
+        .replace('{name}', meeqatName),
       sound: 'default',
       data: { type: 'meeqat' },
     },
@@ -40,10 +57,11 @@ export async function sendMeeqatAlert(meeqatName: string, distanceKm: number): P
 }
 
 export async function sendHaramEntryAlert(): Promise<void> {
+  const strings = await getNotificationStrings()
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'Entered the Haram',
-      body: 'You have entered the boundary of the Haram sanctuary.',
+      title: strings.notifHaramEntryTitle,
+      body: strings.notifHaramEntryBody,
       sound: 'default',
       data: { type: 'haram_entry' },
     },
@@ -52,10 +70,11 @@ export async function sendHaramEntryAlert(): Promise<void> {
 }
 
 export async function sendHaramExitAlert(): Promise<void> {
+  const strings = await getNotificationStrings()
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'Exited the Haram',
-      body: 'You have exited the boundary of the Haram sanctuary.',
+      title: strings.notifHaramExitTitle,
+      body: strings.notifHaramExitBody,
       sound: 'default',
       data: { type: 'haram_exit' },
     },

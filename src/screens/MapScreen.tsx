@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
-import MapView, { Marker, Polyline, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, Polyline, Polygon, Callout, PROVIDER_GOOGLE, MapType } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
-import { TILE_URL, TILE_ATTRIBUTION } from '../utils/tiles'
 import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints } from '../utils/geo'
 import { HARAM_POLYGON } from '../data/haram'
+import { useTranslation } from '../i18n/I18nProvider'
+
+const HARAM_COORDS = HARAM_POLYGON.map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
 
 export default function MapScreen() {
+  const { t, locale } = useTranslation()
   const mapRef = useRef<MapView>(null)
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [nearestMeeqat, setNearestMeeqat] = useState<{ name: string; dist: number } | null>(null)
   const [insideHaram, setInsideHaram] = useState(false)
   const [permissionDenied, setPermissionDenied] = useState(false)
+  const [mapType, setMapType] = useState<MapType>('standard')
 
   // Compute arcs — same algorithm as the website
   const arcs = useMemo(() => {
@@ -40,6 +44,20 @@ export default function MapScreen() {
     })
   }, [])
 
+  // Straight segments joining each arc's end to the next arc's start — the
+  // two points share a bearing (the sector boundary) but sit at different
+  // radii, so connecting them closes the arcs into one continuous polygon.
+  const connectors = useMemo(() => {
+    const n = arcs.length
+    return arcs.map((arc, i) => {
+      const next = arcs[(i + 1) % n]
+      return {
+        id: `${arc.id}-${next.id}`,
+        coords: [arc.coords[arc.coords.length - 1], next.coords[0]],
+      }
+    })
+  }, [arcs])
+
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null
 
@@ -48,14 +66,17 @@ export default function MapScreen() {
       if (status !== 'granted') { setPermissionDenied(true); return }
 
       subscription = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, distanceInterval: 100 },
+        { accuracy: Location.Accuracy.Balanced, distanceInterval: 100, timeInterval: 5000 },
         (loc) => {
           const pos: [number, number] = [loc.coords.latitude, loc.coords.longitude]
           setUserLocation(pos)
           setInsideHaram(isInsidePolygon(pos, HARAM_POLYGON))
 
           const nearest = MEEQAT_POINTS
-            .map(m => ({ name: m.name.split(' (')[0], dist: distKm(pos, [m.lat, m.lng]) }))
+            .map(m => ({
+              name: (locale === 'ar' ? m.nameAr : m.name).split(' (')[0],
+              dist: distKm(pos, [m.lat, m.lng]),
+            }))
             .sort((a, b) => a.dist - b.dist)[0]
           setNearestMeeqat(nearest)
         },
@@ -64,7 +85,7 @@ export default function MapScreen() {
 
     start()
     return () => { subscription?.remove() }
-  }, [])
+  }, [locale])
 
   const centerOnUser = () => {
     if (!userLocation) return
@@ -80,12 +101,10 @@ export default function MapScreen() {
     return (
       <View style={styles.denied}>
         <Ionicons name="location-outline" size={48} color="#ccc" />
-        <Text style={styles.deniedTitle}>Location Access Required</Text>
-        <Text style={styles.deniedBody}>
-          Enable location permission in Settings to see your position and distances to Meeqat points.
-        </Text>
+        <Text style={styles.deniedTitle}>{t('locationAccessRequiredTitle')}</Text>
+        <Text style={styles.deniedBody}>{t('mapPermissionDeniedBody')}</Text>
         <TouchableOpacity style={styles.deniedBtn} onPress={() => Linking.openSettings()}>
-          <Text style={styles.deniedBtnText}>Open Settings</Text>
+          <Text style={styles.deniedBtnText}>{t('openSettings')}</Text>
         </TouchableOpacity>
       </View>
     )
@@ -97,16 +116,15 @@ export default function MapScreen() {
         ref={mapRef}
         style={styles.map}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-        mapType="none"
+        mapType={mapType}
         initialRegion={{ latitude: 22.5, longitude: 40.0, latitudeDelta: 8, longitudeDelta: 8 }}
         showsUserLocation
         showsMyLocationButton={false}
       >
-        <UrlTile urlTemplate={TILE_URL} maximumZ={19} />
         {/* Makkah marker */}
         <Marker
           coordinate={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}
-          title="Makkah al-Mukarramah"
+          title={t('makkahMarkerTitle')}
         />
 
         {/* Meeqat markers */}
@@ -114,10 +132,24 @@ export default function MapScreen() {
           <Marker
             key={point.id}
             coordinate={{ latitude: point.lat, longitude: point.lng }}
-            title={point.name.split(' (')[0]}
-            description={`${point.distance} from Makkah · ${point.forPilgrims}`}
             pinColor={point.color}
-          />
+          >
+            {/* Custom callout: the default OS callout truncates the
+                description to one line, cutting off most of the text. */}
+            <Callout tooltip={false} style={styles.callout}>
+              <View style={styles.calloutContent}>
+                <Text style={styles.calloutTitle}>
+                  {(locale === 'ar' ? point.nameAr : point.name).split(' (')[0]}
+                </Text>
+                <Text style={styles.calloutText}>
+                  {t('distanceFromMakkah', { distance: point.distance })}
+                </Text>
+                <Text style={styles.calloutText}>
+                  {locale === 'ar' ? point.forPilgrimsAr : point.forPilgrims}
+                </Text>
+              </View>
+            </Callout>
+          </Marker>
         ))}
 
         {/* Sector arcs */}
@@ -130,26 +162,52 @@ export default function MapScreen() {
             lineDashPattern={[8, 5]}
           />
         ))}
-      </MapView>
 
-      <Text style={styles.attribution}>{TILE_ATTRIBUTION}</Text>
+        {/* Connectors closing the arcs into one continuous boundary */}
+        {connectors.map(c => (
+          <Polyline
+            key={`connector-${c.id}`}
+            coordinates={c.coords}
+            strokeColor="#d4af37"
+            strokeWidth={2}
+          />
+        ))}
+
+        {/* Haram boundary */}
+        <Polygon
+          coordinates={HARAM_COORDS}
+          strokeColor="#16a34a"
+          strokeWidth={3}
+          fillColor="rgba(34, 197, 94, 0.2)"
+        />
+      </MapView>
 
       {/* Status banner */}
       <View style={[styles.banner, insideHaram && styles.bannerHaram]}>
         {insideHaram ? (
-          <Text style={styles.bannerText}>You are inside the Haram boundary</Text>
+          <Text style={styles.bannerText}>{t('insideHaramBanner')}</Text>
         ) : nearestMeeqat ? (
           <Text style={styles.bannerText}>
-            Nearest Meeqat: {nearestMeeqat.name} · {Math.round(nearestMeeqat.dist)} km
+            {t('nearestMeeqatBanner', { name: nearestMeeqat.name, km: Math.round(nearestMeeqat.dist) })}
           </Text>
         ) : (
-          <Text style={styles.bannerText}>Locating…</Text>
+          <Text style={styles.bannerText}>{t('locating')}</Text>
         )}
       </View>
 
       {/* Center on user */}
       <TouchableOpacity style={styles.centerBtn} onPress={centerOnUser}>
         <Text style={styles.centerBtnText}>⊕</Text>
+      </TouchableOpacity>
+
+      {/* Satellite/hybrid toggle */}
+      <TouchableOpacity
+        style={styles.mapTypeBtn}
+        onPress={() => setMapType(prev => (prev === 'hybrid' ? 'standard' : 'hybrid'))}
+      >
+        <Text style={styles.mapTypeBtnText}>
+          {mapType === 'hybrid' ? t('mapViewButton') : t('satelliteViewButton')}
+        </Text>
       </TouchableOpacity>
     </View>
   )
@@ -193,15 +251,25 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   centerBtnText: { fontSize: 22, color: '#1a5f3f' },
-  attribution: {
+  mapTypeBtn: {
     position: 'absolute',
-    bottom: 4,
-    left: 8,
-    fontSize: 10,
-    color: 'rgba(0,0,0,0.5)',
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    paddingHorizontal: 4,
+    bottom: 90,
+    left: 16,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
   },
+  mapTypeBtnText: { fontSize: 13, fontWeight: '600', color: '#1a5f3f' },
+  callout: { width: 220 },
+  calloutContent: { padding: 4 },
+  calloutTitle: { fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
+  calloutText: { fontSize: 12, color: '#555', lineHeight: 17 },
   denied: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   deniedTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', textAlign: 'center' },
   deniedBody: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20 },

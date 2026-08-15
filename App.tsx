@@ -4,15 +4,45 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { StatusBar } from 'expo-status-bar'
 import * as Notifications from 'expo-notifications'
 import { Ionicons } from '@expo/vector-icons'
+import * as Sentry from '@sentry/react-native'
+import { I18nProvider, useTranslation } from './src/i18n/I18nProvider'
+import AppErrorBoundary from './src/components/AppErrorBoundary'
 import MapScreen from './src/screens/MapScreen'
 import HaramScreen from './src/screens/HaramScreen'
 import AlertsScreen from './src/screens/AlertsScreen'
 import ChecklistScreen from './src/screens/ChecklistScreen'
+import { log, logError } from './src/utils/log'
+
+log('app', 'App.tsx module evaluated')
+
+// Surface fatal JS errors in logcat (`adb logcat -s ReactNativeJS`) even in
+// release builds, where React Native's red box doesn't exist and a fatal
+// error otherwise dies silently.
+const defaultHandler = ErrorUtils.getGlobalHandler()
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  logError('fatal', `unhandled JS error (fatal=${String(isFatal)})`, error)
+  defaultHandler(error, isFatal)
+})
 
 const Tab = createBottomTabNavigator()
 const navigationRef = createNavigationContainerRef()
 
-export default function App() {
+// DSN is a public identifier by Sentry's own design, safe to inline via EXPO_PUBLIC_.
+// Left unset in dev — Sentry.init() is a no-op without a dsn.
+if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    tracesSampleRate: 1.0,
+  })
+}
+
+function AppNavigator() {
+  const { t } = useTranslation()
+
+  useEffect(() => {
+    log('app', 'AppNavigator mounted')
+  }, [])
+
   // Navigate to the relevant tab when user taps a notification
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener(response => {
@@ -39,7 +69,7 @@ export default function App() {
             const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
               Map:       'map-outline',
               Haram:     'globe-outline',
-              Alerts:    'notifications-outline',
+              Alerts:    'settings-outline',
               Checklist: 'checkbox-outline',
             }
             return <Ionicons name={icons[route.name]} size={size} color={color} />
@@ -49,24 +79,36 @@ export default function App() {
         <Tab.Screen
           name="Map"
           component={MapScreen}
-          options={{ title: 'Meeqat Points', tabBarLabel: 'Map' }}
+          options={{ title: t('tabMapTitle'), tabBarLabel: t('tabMapLabel') }}
         />
         <Tab.Screen
           name="Haram"
           component={HaramScreen}
-          options={{ title: 'Haram Boundary', tabBarLabel: 'Haram' }}
+          options={{ title: t('tabHaramTitle'), tabBarLabel: t('tabHaramLabel') }}
         />
         <Tab.Screen
           name="Alerts"
           component={AlertsScreen}
-          options={{ title: 'Alert Settings', tabBarLabel: 'Alerts' }}
+          options={{ title: t('tabAlertsTitle'), tabBarLabel: t('tabAlertsLabel') }}
         />
         <Tab.Screen
           name="Checklist"
           component={ChecklistScreen}
-          options={{ title: 'Ihram Checklist', tabBarLabel: 'Checklist' }}
+          options={{ title: t('tabChecklistTitle'), tabBarLabel: t('tabChecklistLabel') }}
         />
       </Tab.Navigator>
     </NavigationContainer>
   )
 }
+
+function App() {
+  return (
+    <AppErrorBoundary>
+      <I18nProvider>
+        <AppNavigator />
+      </I18nProvider>
+    </AppErrorBoundary>
+  )
+}
+
+export default Sentry.wrap(App)
