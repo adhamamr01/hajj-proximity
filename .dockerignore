@@ -1,0 +1,12 @@
+# The Dockerfile never COPYs the project in (it's volume-mounted at
+# `docker run` time), but `docker build` still tars up this whole directory
+# as build context unless excluded here — node_modules alone makes that slow.
+node_modules
+.git
+.expo
+android
+ios
+*.apk
+*.aab
+*.jks
+*.docx
