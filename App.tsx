@@ -6,11 +6,13 @@ import * as Notifications from 'expo-notifications'
 import { Ionicons } from '@expo/vector-icons'
 import * as Sentry from '@sentry/react-native'
 import { I18nProvider, useTranslation } from './src/i18n/I18nProvider'
+import { PremiumProvider } from './src/premium/PremiumProvider'
 import AppErrorBoundary from './src/components/AppErrorBoundary'
 import MapScreen from './src/screens/MapScreen'
 import HaramScreen from './src/screens/HaramScreen'
 import AlertsScreen from './src/screens/AlertsScreen'
 import ChecklistScreen from './src/screens/ChecklistScreen'
+import FidyahScreen from './src/screens/FidyahScreen'
 import { log, logError } from './src/utils/log'
 
 log('app', 'App.tsx module evaluated')
@@ -71,6 +73,7 @@ function AppNavigator() {
               Haram:     'globe-outline',
               Alerts:    'settings-outline',
               Checklist: 'checkbox-outline',
+              Fidyah:    'calculator-outline',
             }
             return <Ionicons name={icons[route.name]} size={size} color={color} />
           },
@@ -96,6 +99,11 @@ function AppNavigator() {
           component={ChecklistScreen}
           options={{ title: t('tabChecklistTitle'), tabBarLabel: t('tabChecklistLabel') }}
         />
+        <Tab.Screen
+          name="Fidyah"
+          component={FidyahScreen}
+          options={{ title: t('tabFidyahTitle'), tabBarLabel: t('tabFidyahLabel') }}
+        />
       </Tab.Navigator>
     </NavigationContainer>
   )
@@ -105,7 +113,9 @@ function App() {
   return (
     <AppErrorBoundary>
       <I18nProvider>
-        <AppNavigator />
+        <PremiumProvider>
+          <AppNavigator />
+        </PremiumProvider>
       </I18nProvider>
     </AppErrorBoundary>
   )

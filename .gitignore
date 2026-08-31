@@ -47,3 +47,7 @@ app.json
 # local eas build --local output
 *.apk
 *.aab
+
+# source reference documents (not app assets — content is transcribed
+# into src/data and src/i18n, not shipped as files)
+*.docx

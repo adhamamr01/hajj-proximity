@@ -10,6 +10,7 @@ import {
 import { requestNotificationPermission } from '../services/NotificationService'
 import { useTranslation } from '../i18n/I18nProvider'
 import { LocalePreference } from '../i18n/locale'
+import { usePremium } from '../premium/PremiumProvider'
 
 const THRESHOLDS = [10, 20, 50]
 const MEEQAT_ALERTS_KEY = 'meeqat_alerts_enabled'
@@ -17,6 +18,7 @@ const HARAM_ALERTS_KEY = 'haram_alerts_enabled'
 
 export default function AlertsScreen() {
   const { t, preference, setPreference } = useTranslation()
+  const { isPremium, setPremium } = usePremium()
   const [tracking, setTracking]           = useState(false)
   const [meeqatEnabled, setMeeqatEnabled] = useState(true)
   const [haramEnabled, setHaramEnabled]   = useState(true)
@@ -215,6 +217,21 @@ export default function AlertsScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t('aboutTitle')}</Text>
         <Text style={styles.cardDescription}>{t('aboutMadhhabNotice')}</Text>
+      </View>
+
+      {/* Dev-only premium preview toggle — remove once real billing exists */}
+      <View style={styles.card}>
+        <View style={[styles.row, { borderBottomWidth: 0 }]}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowLabel}>{t('devPremiumTitle')}</Text>
+            <Text style={styles.rowDescription}>{t('devPremiumDesc')}</Text>
+          </View>
+          <Switch
+            value={isPremium}
+            onValueChange={setPremium}
+            trackColor={{ true: '#1a5f3f' }}
+          />
+        </View>
       </View>
     </ScrollView>
   )
