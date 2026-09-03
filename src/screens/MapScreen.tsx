@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
-import MapView, { Marker, Polyline, Polygon, Callout, PROVIDER_GOOGLE, MapType } from 'react-native-maps'
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking, Alert } from 'react-native'
+import MapView, { Marker, Polyline, Polygon, Circle, Callout, PROVIDER_GOOGLE, MapType } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
@@ -87,6 +87,17 @@ export default function MapScreen() {
     return () => { subscription?.remove() }
   }, [locale])
 
+  // react-native-maps' Circle has no onPress of its own, so hit-test taps
+  // on the map against the circle's border (a small tolerance band around
+  // the 82.5km radius, not the whole filled interior) instead.
+  const CIRCLE_BORDER_TOLERANCE_KM = 3
+  const handleMapPress = (e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+    const { latitude, longitude } = e.nativeEvent.coordinate
+    if (Math.abs(distKm(MAKKAH, [latitude, longitude]) - 82.5) <= CIRCLE_BORDER_TOLERANCE_KM) {
+      Alert.alert('', t('meeqatCircleRule'))
+    }
+  }
+
   const centerOnUser = () => {
     if (!userLocation) return
     mapRef.current?.animateToRegion({
@@ -120,6 +131,7 @@ export default function MapScreen() {
         initialRegion={{ latitude: 22.5, longitude: 40.0, latitudeDelta: 8, longitudeDelta: 8 }}
         showsUserLocation
         showsMyLocationButton={false}
+        onPress={handleMapPress}
       >
         {/* Makkah marker */}
         <Marker
@@ -179,6 +191,15 @@ export default function MapScreen() {
           strokeColor="#16a34a"
           strokeWidth={3}
           fillColor="rgba(34, 197, 94, 0.2)"
+        />
+
+        {/* Reference circle: 82.5km radius around Makkah */}
+        <Circle
+          center={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}
+          radius={82500}
+          strokeColor="#d4af37"
+          strokeWidth={2}
+          fillColor="transparent"
         />
       </MapView>
 

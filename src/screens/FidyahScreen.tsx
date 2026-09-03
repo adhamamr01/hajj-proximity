@@ -16,10 +16,11 @@ const TIER_META: Record<FidyahTier, { titleKey: TranslationKey; explanationKey: 
   ihsar:    { titleKey: 'fidyahTierIhsarTitle',    explanationKey: 'fidyahTierIhsarExplanation',    color: '#7c3aed' },
 }
 
-function ItemRow({ item, count, onPress, onReset, t }: {
+function ItemRow({ item, count, onPress, onDecrement, onReset, t }: {
   item: FidyahItem
   count: number
   onPress: () => void
+  onDecrement: () => void
   onReset: () => void
   t: (key: TranslationKey) => string
 }) {
@@ -35,6 +36,15 @@ function ItemRow({ item, count, onPress, onReset, t }: {
         {checked && <Text style={styles.checkmark}>✓</Text>}
       </View>
       <Text style={styles.itemLabel}>{t(item.labelKey)}</Text>
+      {checked && (
+        <TouchableOpacity
+          style={styles.minusBtn}
+          onPress={(e) => { e.stopPropagation(); onDecrement() }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="remove" size={16} color="#1a5f3f" />
+        </TouchableOpacity>
+      )}
       {count > 1 && <Text style={styles.itemCount}>×{count}</Text>}
     </TouchableOpacity>
   )
@@ -69,6 +79,7 @@ function FidyahCalculator() {
   const results = useMemo(() => calculateFidyah(selectedItemIds), [selectedItemIds])
 
   const increment = (id: string) => setCounts(prev => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }))
+  const decrement = (id: string) => setCounts(prev => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) - 1) }))
   const reset = (id: string) => setCounts(prev => ({ ...prev, [id]: 0 }))
 
   const switchRitual = (next: Ritual) => {
@@ -88,6 +99,7 @@ function FidyahCalculator() {
             item={item}
             count={counts[item.id] ?? 0}
             onPress={() => increment(item.id)}
+            onDecrement={() => decrement(item.id)}
             onReset={() => reset(item.id)}
             t={t}
           />
@@ -202,6 +214,15 @@ const styles = StyleSheet.create({
   checkboxDone: { backgroundColor: '#1a5f3f', borderColor: '#1a5f3f' },
   checkmark: { color: '#fff', fontSize: 13, fontWeight: '700' },
   itemLabel: { flex: 1, fontSize: 13, color: '#1a1a1a', lineHeight: 18 },
+  minusBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#1a5f3f',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   itemCount: { fontSize: 12, fontWeight: '700', color: '#1a5f3f' },
   resultCard: {
     borderLeftWidth: 3,
