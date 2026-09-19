@@ -31,17 +31,20 @@
 <body>
 
 <h1>Privacy Policy — Hajj Proximity</h1>
-<p class="updated">Last updated: July 7, 2026</p>
+<p class="updated">Last updated: September 20, 2026</p>
 
 <p>
-  Hajj Proximity is a free app that alerts pilgrims when they approach a Meeqat boundary
-  or enter/exit the Haram sanctuary around Makkah. This policy explains what data the app
-  uses and why.
+  Hajj Proximity alerts pilgrims when they approach a Meeqat boundary or enter/exit the
+  Haram sanctuary around Makkah. It comes in two versions: <strong>Hajj Proximity</strong>
+  (free) and <strong>Hajj Proximity Premium</strong> (a paid app that adds a Fidyah
+  Calculator). This policy applies to both, and explains what data the apps use and why.
 </p>
 
 <div class="card">
-  <strong>In short:</strong> your location never leaves your device. There is no account,
-  no server, and no backend for this app — all data stays on your phone.
+  <strong>In short:</strong> the apps never send your location to any server of ours — there
+  is no account, no server, and no backend. Everything the apps work out stays on your
+  phone. The only outside service involved in showing the map is Google Maps (see
+  "Maps" below).
 </div>
 
 <h2>Location data</h2>
@@ -51,29 +54,47 @@
   inside the Haram boundary. This calculation happens entirely on your device.
 </p>
 <ul>
-  <li>Your raw location is never stored or transmitted anywhere.</li>
+  <li>The apps never store your raw location, and never send it to any server of ours or
+      to any third party.</li>
   <li>Only small derived flags are saved locally on your device (in app storage, not on a
       server): which Meeqat points you've already been alerted for, whether you were last
       inside or outside the Haram, and your chosen alert distance. This lets the app avoid
       repeating an alert you've already received.</li>
   <li>Background location is used only to trigger Meeqat/Haram notifications while the
-      app is closed. You can disable background tracking at any time from the Alerts tab.</li>
+      app is closed. You can disable background tracking at any time from the Settings tab.</li>
 </ul>
 
 <h2>Other data stored on your device</h2>
 <p>
-  Your Ihram checklist progress and alert settings (thresholds, which alert types are
-  enabled) are saved locally on your device only, so they persist between app sessions.
-  None of this is sent anywhere.
+  Your Ihram checklist progress, alert settings (distance threshold, which alert types are
+  enabled), your language choice, and the alert flags described above are saved locally on
+  your device only, so they persist between app sessions. None of this is sent anywhere.
+  Deleting the app removes all of it.
 </p>
 
-<h2>Map tiles</h2>
+<h2>Fidyah Calculator (Hajj Proximity Premium)</h2>
 <p>
-  The map screens load map imagery from Esri's tile service and, on Android, use the
-  Google Maps SDK to render the map. Loading a map tile works like loading any web page:
-  the tile provider can see your device's IP address and which map area you're viewing,
-  the same way any website sees visitor requests. No location coordinates or personal
-  data are sent to these providers beyond what's needed to fetch the visible map area.
+  The calculator works entirely on your device. The actions you select are used only to
+  show the result on screen; they are not saved, not sent anywhere, and are cleared when
+  you leave the calculator or close the app. In the free app, the Fidyah tab only shows a
+  description and a button that opens the premium app's page on Google Play.
+</p>
+
+<h2>Purchases</h2>
+<p>
+  Hajj Proximity Premium is a paid app bought through Google Play. Google handles the
+  payment; the app never sees or stores your payment details, and there are no in-app
+  purchases or subscriptions.
+</p>
+
+<h2>Maps</h2>
+<p>
+  The map screens use the Google Maps SDK to draw the map. To do this, Google loads map
+  data over the internet, and Google may receive technical information such as your
+  device's IP address and the map area you are viewing, the same way any map service
+  does. How Google handles that is described in
+  <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>. Our apps do
+  not send your location coordinates to Google or to anyone else.
 </p>
 
 <h2>Crash reporting</h2>
@@ -97,8 +118,11 @@
 <ul>
   <li><strong>Location (foreground and background):</strong> required for proximity
       alerts, as described above.</li>
+  <li><strong>Foreground service (location):</strong> lets the app keep checking your
+      location in the background while tracking is turned on.</li>
   <li><strong>Notifications:</strong> required to alert you when you approach a Meeqat or
       cross the Haram boundary.</li>
+  <li><strong>Internet access:</strong> required to load the map.</li>
 </ul>
 
 <h2>Children's privacy</h2>
