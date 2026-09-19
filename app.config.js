@@ -5,8 +5,10 @@ const sentryConfigured = Boolean(process.env.SENTRY_ORG && process.env.SENTRY_PR
 
 // Free and premium ship as two separate Play Store listings (separate
 // applicationId), rather than one app with in-app billing — the Play Store
-// purchase itself is the paywall. APP_VARIANT selects which one this build is.
-const isPremiumBuild = process.env.APP_VARIANT === 'premium'
+// purchase itself is the paywall. EXPO_PUBLIC_APP_VARIANT selects which one
+// this build is; the EXPO_PUBLIC_ prefix makes the bundler inline it, which is
+// what lets the free build drop the calculator code (see FidyahScreen.tsx).
+const isPremiumBuild = process.env.EXPO_PUBLIC_APP_VARIANT === 'premium'
 const packageId = isPremiumBuild ? 'com.hajjproximity.app.premium' : 'com.hajjproximity.app'
 
 module.exports = {
@@ -90,7 +92,6 @@ module.exports = {
       favicon: './assets/favicon.png',
     },
     extra: {
-      isPremiumBuild,
       premiumPackageId: 'com.hajjproximity.app.premium',
       eas: {
         projectId: 'c65399d7-3ae2-43f5-bdf2-8b0dbd572ba0',

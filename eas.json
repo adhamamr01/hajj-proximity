@@ -7,23 +7,23 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "APP_VARIANT": "free" }
+      "env": { "EXPO_PUBLIC_APP_VARIANT": "free" }
     },
     "preview": {
       "distribution": "internal",
-      "env": { "APP_VARIANT": "free" }
+      "env": { "EXPO_PUBLIC_APP_VARIANT": "free" }
     },
     "preview-premium": {
       "distribution": "internal",
-      "env": { "APP_VARIANT": "premium" }
+      "env": { "EXPO_PUBLIC_APP_VARIANT": "premium" }
     },
     "production": {
       "autoIncrement": true,
-      "env": { "APP_VARIANT": "free" }
+      "env": { "EXPO_PUBLIC_APP_VARIANT": "free" }
     },
     "production-premium": {
       "autoIncrement": true,
-      "env": { "APP_VARIANT": "premium" }
+      "env": { "EXPO_PUBLIC_APP_VARIANT": "premium" }
     }
   },
   "submit": {

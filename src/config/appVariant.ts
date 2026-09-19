@@ -2,11 +2,11 @@ import Constants from 'expo-constants'
 
 /**
  * Free and premium ship as separate Play Store listings (separate
- * applicationId, baked in at build time via APP_VARIANT — see
- * app.config.js), not one app gated by in-app billing.
+ * applicationId, chosen at build time via EXPO_PUBLIC_APP_VARIANT — see
+ * app.config.js and eas.json). What differs between them at runtime is
+ * decided in FidyahScreen.tsx, where the bundler removes the premium code
+ * from the free build; there is deliberately no runtime flag to flip here.
  */
-export const IS_PREMIUM_BUILD: boolean = Constants.expoConfig?.extra?.isPremiumBuild === true
-
 export const PREMIUM_PACKAGE_ID: string =
   Constants.expoConfig?.extra?.premiumPackageId ?? 'com.hajjproximity.app.premium'
 
