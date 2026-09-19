@@ -1,0 +1,159 @@
+import {
+  minaStatus, minaFidyahIds, totalPebblesMissed, ramyFidyahIds, riteFidyahIds,
+  MinaInput, PebblesMissed, PEBBLE_LIMITS,
+} from './hajjRites'
+import { calculateFidyah, expandCounts } from './fidyahCalculator'
+
+const mina = (o: Partial<MinaInput> = {}): MinaInput => ({
+  missedNight1: false, missedNight2: false, missedNight3: false, leftEarly: false, ...o,
+})
+const noPebbles: PebblesMissed = { nahr: 0, tashreeq1: 0, tashreeq2: 0, tashreeq3: 0 }
+const outcome = (m: MinaInput) => {
+  const ids = minaFidyahIds(m)
+  return ids[0] === 'mina_all_missed' ? 'dam' : ids.length
+}
+
+describe('Mina nights', () => {
+  it('owes nothing when every night was stayed', () => {
+    expect(outcome(mina())).toBe(0)
+  })
+
+  it('owes nothing for a valid early departure (stayed nights 1 and 2)', () => {
+    expect(outcome(mina({ leftEarly: true }))).toBe(0)
+    expect(minaStatus(mina({ leftEarly: true })).validEarlyDeparture).toBe(true)
+  })
+
+  it('owes one mudd for a single missed night 1 or 2 while staying the third', () => {
+    expect(outcome(mina({ missedNight1: true }))).toBe(1)
+    expect(outcome(mina({ missedNight2: true }))).toBe(1)
+  })
+
+  it('owes one mudd for skipping only the third night after staying on past sunset', () => {
+    expect(outcome(mina({ missedNight3: true }))).toBe(1)
+  })
+
+  it('owes two mudd for nights 1 and 2 while staying the third', () => {
+    expect(outcome(mina({ missedNight1: true, missedNight2: true }))).toBe(2)
+  })
+
+  it('owes two mudd for one missed night plus an early departure — it is not a valid one', () => {
+    expect(outcome(mina({ missedNight1: true, leftEarly: true }))).toBe(2)
+    expect(outcome(mina({ missedNight2: true, leftEarly: true }))).toBe(2)
+  })
+
+  it('owes a dam for nights 1 and 2 missed plus an early departure', () => {
+    expect(outcome(mina({ missedNight1: true, missedNight2: true, leftEarly: true }))).toBe('dam')
+  })
+
+  it('owes a dam for all three nights, replacing the mudds', () => {
+    expect(minaFidyahIds(mina({ missedNight1: true, missedNight2: true, missedNight3: true })))
+      .toEqual(['mina_all_missed'])
+  })
+
+  it('ignores the third-night flag once the pilgrim left early', () => {
+    expect(outcome(mina({ leftEarly: true, missedNight3: true }))).toBe(0)
+  })
+
+  it('reduces every combination of the three nights to one of four outcomes', () => {
+    const seen = new Set<string | number>()
+    for (const n1 of [false, true]) for (const n2 of [false, true]) for (const n3 of [false, true]) {
+      for (const leftEarly of [false, true]) {
+        seen.add(outcome(mina({ missedNight1: n1, missedNight2: n2, missedNight3: n3, leftEarly })))
+      }
+    }
+    expect([...seen].sort()).toEqual([0, 1, 2, 'dam'])
+  })
+})
+
+describe('stoning', () => {
+  it('owes nothing when no pebbles were missed', () => {
+    expect(ramyFidyahIds(0)).toEqual([])
+  })
+
+  it('owes a mudd per pebble for one or two', () => {
+    expect(ramyFidyahIds(1)).toEqual(['ramy_partial'])
+    expect(ramyFidyahIds(2)).toEqual(['ramy_partial', 'ramy_partial'])
+  })
+
+  it('owes one dam for three or more, however many', () => {
+    expect(ramyFidyahIds(3)).toEqual(['ramy_dam'])
+    expect(ramyFidyahIds(70)).toEqual(['ramy_dam'])
+  })
+
+  it('adds pebbles across days', () => {
+    expect(totalPebblesMissed({ nahr: 1, tashreeq1: 1, tashreeq2: 1, tashreeq3: 0 }, mina())).toBe(3)
+  })
+
+  it('never counts more than each day allows', () => {
+    const huge = { nahr: 99, tashreeq1: 99, tashreeq2: 99, tashreeq3: 99 }
+    expect(totalPebblesMissed(huge, mina())).toBe(7 + 21 + 21 + 21)
+    expect(PEBBLE_LIMITS.nahr + PEBBLE_LIMITS.tashreeq1 + PEBBLE_LIMITS.tashreeq2 + PEBBLE_LIMITS.tashreeq3).toBe(70)
+  })
+
+  it('drops the 13th-day stoning after a valid early departure', () => {
+    expect(totalPebblesMissed({ ...noPebbles, tashreeq3: 5 }, mina({ leftEarly: true }))).toBe(0)
+  })
+
+  it('counts the whole 13th-day stoning as missed after an invalid early departure', () => {
+    const invalid = mina({ leftEarly: true, missedNight1: true })
+    expect(totalPebblesMissed(noPebbles, invalid)).toBe(21)
+    expect(ramyFidyahIds(totalPebblesMissed(noPebbles, invalid))).toEqual(['ramy_dam'])
+  })
+})
+
+describe('riteFidyahIds', () => {
+  const base = { meeqatCrossed: false, muzdalifahMissed: false, mina: mina(), pebbles: noPebbles }
+
+  it('owes nothing by default', () => {
+    expect(riteFidyahIds({ ritual: 'hajj', ...base })).toEqual([])
+  })
+
+  it('counts the Meeqat once, for Hajj and Umrah', () => {
+    expect(riteFidyahIds({ ritual: 'umrah', ...base, meeqatCrossed: true })).toEqual(['meeqat_crossed'])
+    expect(riteFidyahIds({ ritual: 'hajj', ...base, meeqatCrossed: true })).toEqual(['meeqat_crossed'])
+  })
+
+  it('ignores Hajj-only rites for Umrah', () => {
+    const ids = riteFidyahIds({
+      ritual: 'umrah', meeqatCrossed: false, muzdalifahMissed: true,
+      mina: mina({ missedNight1: true, missedNight2: true, missedNight3: true }),
+      pebbles: { nahr: 7, tashreeq1: 21, tashreeq2: 21, tashreeq3: 21 },
+    })
+    expect(ids).toEqual([])
+  })
+
+  it('keeps Muzdalifah and Mina as separate dams', () => {
+    const ids = riteFidyahIds({
+      ritual: 'hajj', ...base, muzdalifahMissed: true,
+      mina: mina({ missedNight1: true, missedNight2: true, missedNight3: true }),
+    })
+    expect(calculateFidyah(ids)).toEqual([
+      { tier: 'full', count: 2, itemIds: ['muzdalifah_missed', 'mina_all_missed'] },
+    ])
+  })
+
+  it('merges night and pebble mudds into one partial total', () => {
+    const ids = riteFidyahIds({
+      ritual: 'hajj', ...base, mina: mina({ missedNight1: true }),
+      pebbles: { ...noPebbles, nahr: 1 },
+    })
+    expect(calculateFidyah(ids)).toEqual([
+      { tier: 'partial', count: 2, itemIds: ['mina_partial_missed', 'ramy_partial'] },
+    ])
+  })
+})
+
+describe('expandCounts', () => {
+  it('caps the one-or-two hairs and nails counters at two', () => {
+    expect(expandCounts({ hair_removal_partial: 5, nail_trim_partial: 3 }))
+      .toEqual(['hair_removal_partial', 'hair_removal_partial', 'nail_trim_partial', 'nail_trim_partial'])
+  })
+
+  it('leaves items with no natural limit uncapped', () => {
+    expect(expandCounts({ perfume: 4 })).toHaveLength(4)
+  })
+
+  it('ignores unknown ids and negative counts', () => {
+    expect(expandCounts({ nope: 3, perfume: -2 })).toEqual([])
+  })
+})

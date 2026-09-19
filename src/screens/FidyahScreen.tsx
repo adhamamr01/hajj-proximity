@@ -1,11 +1,17 @@
 import { useMemo, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Switch } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useTranslation } from '../i18n/I18nProvider'
-import { usePremium } from '../premium/PremiumProvider'
+import { IS_PREMIUM_BUILD, PREMIUM_PLAY_STORE_URL } from '../config/appVariant'
 import { getFidyahItemsForRitual, FidyahItem, FidyahTier, Ritual } from '../data/fidyah'
-import { calculateFidyah, FidyahResult } from '../utils/fidyahCalculator'
+import { calculateFidyah, expandCounts, FidyahResult } from '../utils/fidyahCalculator'
+import {
+  MinaInput, PebblesMissed, StoningDay, PEBBLE_LIMITS,
+  minaStatus, minaFidyahIds, totalPebblesMissed, ramyFidyahIds, riteFidyahIds,
+} from '../utils/hajjRites'
 import { TranslationKey } from '../i18n/translations'
+
+type T = ReturnType<typeof useTranslation>['t']
 
 const TIER_META: Record<FidyahTier, { titleKey: TranslationKey; explanationKey: TranslationKey; color: string }> = {
   full:     { titleKey: 'fidyahTierFullTitle',     explanationKey: 'fidyahTierFullExplanation',     color: '#1a5f3f' },
@@ -16,13 +22,68 @@ const TIER_META: Record<FidyahTier, { titleKey: TranslationKey; explanationKey: 
   ihsar:    { titleKey: 'fidyahTierIhsarTitle',    explanationKey: 'fidyahTierIhsarExplanation',    color: '#7c3aed' },
 }
 
+const PEBBLE_DAYS: { day: StoningDay; labelKey: TranslationKey }[] = [
+  { day: 'nahr',      labelKey: 'fidyahRamyDayNahr' },
+  { day: 'tashreeq1', labelKey: 'fidyahRamyDayTashreeq1' },
+  { day: 'tashreeq2', labelKey: 'fidyahRamyDayTashreeq2' },
+  { day: 'tashreeq3', labelKey: 'fidyahRamyDayTashreeq3' },
+]
+
+const DAM_IDS = ['mina_all_missed', 'ramy_dam']
+
+function outcomeText(t: T, ids: string[]): string {
+  if (ids.length === 0) return t('fidyahOutcomeNone')
+  if (ids.some(id => DAM_IDS.includes(id))) return t('fidyahOutcomeDam')
+  return t('fidyahOutcomeMudd', { count: ids.length })
+}
+
+function ToggleRow({ label, checked, onToggle }: { label: string; checked: boolean; onToggle: () => void }) {
+  return (
+    <TouchableOpacity style={styles.item} onPress={onToggle} activeOpacity={0.7}>
+      <View style={[styles.checkbox, checked && styles.checkboxDone]}>
+        {checked && <Text style={styles.checkmark}>✓</Text>}
+      </View>
+      <Text style={styles.itemLabel}>{label}</Text>
+    </TouchableOpacity>
+  )
+}
+
+function RoundButton({ icon, onPress, disabled }: { icon: 'add' | 'remove'; onPress: () => void; disabled?: boolean }) {
+  return (
+    <TouchableOpacity
+      style={[styles.roundBtn, disabled && styles.roundBtnDisabled]}
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <Ionicons name={icon} size={16} color={disabled ? '#ccc' : '#1a5f3f'} />
+    </TouchableOpacity>
+  )
+}
+
+function PebbleRow({ label, count, max, onChange }: {
+  label: string
+  count: number
+  max: number
+  onChange: (next: number) => void
+}) {
+  return (
+    <View style={styles.item}>
+      <Text style={styles.itemLabel}>{label}</Text>
+      <RoundButton icon="remove" disabled={count <= 0} onPress={() => onChange(count - 1)} />
+      <Text style={styles.stepCount}>{count}/{max}</Text>
+      <RoundButton icon="add" disabled={count >= max} onPress={() => onChange(count + 1)} />
+    </View>
+  )
+}
+
 function ItemRow({ item, count, onPress, onDecrement, onReset, t }: {
   item: FidyahItem
   count: number
   onPress: () => void
   onDecrement: () => void
   onReset: () => void
-  t: (key: TranslationKey) => string
+  t: T
 }) {
   const checked = count > 0
   return (
@@ -45,12 +106,14 @@ function ItemRow({ item, count, onPress, onDecrement, onReset, t }: {
           <Ionicons name="remove" size={16} color="#1a5f3f" />
         </TouchableOpacity>
       )}
-      {count > 1 && <Text style={styles.itemCount}>×{count}</Text>}
+      {item.max !== undefined && checked
+        ? <Text style={styles.itemCount}>{count}/{item.max}</Text>
+        : count > 1 && <Text style={styles.itemCount}>×{count}</Text>}
     </TouchableOpacity>
   )
 }
 
-function ResultCard({ result, t }: { result: FidyahResult; t: (key: TranslationKey, params?: Record<string, string | number>) => string }) {
+function ResultCard({ result, t }: { result: FidyahResult; t: T }) {
   const meta = TIER_META[result.tier]
   return (
     <View style={[styles.resultCard, { borderLeftColor: meta.color }]}>
@@ -62,31 +125,69 @@ function ResultCard({ result, t }: { result: FidyahResult; t: (key: TranslationK
   )
 }
 
-function FidyahCalculator() {
+function RitualChooser({ onChoose }: { onChoose: (ritual: Ritual) => void }) {
   const { t } = useTranslation()
-  const [ritual, setRitual] = useState<Ritual>('hajj')
+  const options: { ritual: Ritual; icon: 'flag-outline' | 'walk-outline'; titleKey: TranslationKey; descKey: TranslationKey }[] = [
+    { ritual: 'hajj',  icon: 'flag-outline', titleKey: 'fidyahRitualHajj',  descKey: 'fidyahChooserHajjDesc' },
+    { ritual: 'umrah', icon: 'walk-outline', titleKey: 'fidyahRitualUmrah', descKey: 'fidyahChooserUmrahDesc' },
+  ]
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{t('fidyahChooserTitle')}</Text>
+        <Text style={styles.cardDescription}>{t('fidyahScreenIntro')}</Text>
+      </View>
+      {options.map(o => (
+        <TouchableOpacity key={o.ritual} style={styles.chooserCard} onPress={() => onChoose(o.ritual)} activeOpacity={0.8}>
+          <Ionicons name={o.icon} size={30} color="#1a5f3f" />
+          <View style={styles.chooserText}>
+            <Text style={styles.chooserTitle}>{t(o.titleKey)}</Text>
+            <Text style={styles.cardDescription}>{t(o.descKey)}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#aaa" />
+        </TouchableOpacity>
+      ))}
+      <Text style={styles.disclaimer}>{t('fidyahDisclaimer')}</Text>
+    </ScrollView>
+  )
+}
+
+function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChangeRitual: () => void }) {
+  const { t } = useTranslation()
+  const isHajj = ritual === 'hajj'
+
   const [counts, setCounts] = useState<Record<string, number>>({})
+  const [meeqatCrossed, setMeeqatCrossed] = useState(false)
+  const [muzdalifahMissed, setMuzdalifahMissed] = useState(false)
+  const [mina, setMina] = useState<MinaInput>({
+    missedNight1: false, missedNight2: false, missedNight3: false, leftEarly: false,
+  })
+  const [pebbles, setPebbles] = useState<PebblesMissed>({ nahr: 0, tashreeq1: 0, tashreeq2: 0, tashreeq3: 0 })
 
   const items = useMemo(() => getFidyahItemsForRitual(ritual), [ritual])
-  const rites = items.filter(i => i.category === 'rite')
   const acts = items.filter(i => i.category === 'act')
   const special = items.filter(i => i.category === 'special')
 
-  const selectedItemIds = useMemo(
-    () => Object.entries(counts).flatMap(([id, n]) => Array(n).fill(id)),
-    [counts],
-  )
-  const results = useMemo(() => calculateFidyah(selectedItemIds), [selectedItemIds])
+  const status = minaStatus(mina)
+  const minaIds = minaFidyahIds(mina)
+  const ramyIds = ramyFidyahIds(totalPebblesMissed(pebbles, mina))
 
-  const increment = (id: string) => setCounts(prev => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }))
+  const results = useMemo(
+    () => calculateFidyah([
+      ...riteFidyahIds({ ritual, meeqatCrossed, muzdalifahMissed, mina, pebbles }),
+      ...expandCounts(counts),
+    ]),
+    [ritual, meeqatCrossed, muzdalifahMissed, mina, pebbles, counts],
+  )
+
+  const itemMax = (id: string) => items.find(i => i.id === id)?.max ?? Infinity
+  const increment = (id: string) => setCounts(prev => ({ ...prev, [id]: Math.min((prev[id] ?? 0) + 1, itemMax(id)) }))
   const decrement = (id: string) => setCounts(prev => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) - 1) }))
   const reset = (id: string) => setCounts(prev => ({ ...prev, [id]: 0 }))
-
-  const switchRitual = (next: Ritual) => {
-    if (next === ritual) return
-    setRitual(next)
-    setCounts({})
-  }
+  const setPebble = (day: StoningDay, next: number) =>
+    setPebbles(prev => ({ ...prev, [day]: Math.min(Math.max(0, next), PEBBLE_LIMITS[day]) }))
+  const toggleMina = (key: 'missedNight1' | 'missedNight2' | 'missedNight3') =>
+    setMina(prev => ({ ...prev, [key]: !prev[key] }))
 
   const renderSection = (titleKey: TranslationKey, sectionItems: FidyahItem[]) => {
     if (sectionItems.length === 0) return null
@@ -111,28 +212,78 @@ function FidyahCalculator() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.card}>
-        <Text style={styles.cardDescription}>{t('fidyahScreenIntro')}</Text>
-        <View style={styles.ritualRow}>
-          <TouchableOpacity
-            style={[styles.ritualBtn, ritual === 'hajj' && styles.ritualBtnActive]}
-            onPress={() => switchRitual('hajj')}
-          >
-            <Text style={[styles.ritualBtnText, ritual === 'hajj' && styles.ritualBtnTextActive]}>
-              {t('fidyahRitualHajj')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.ritualBtn, ritual === 'umrah' && styles.ritualBtnActive]}
-            onPress={() => switchRitual('umrah')}
-          >
-            <Text style={[styles.ritualBtnText, ritual === 'umrah' && styles.ritualBtnTextActive]}>
-              {t('fidyahRitualUmrah')}
-            </Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.ritualName}>{t(isHajj ? 'fidyahRitualHajj' : 'fidyahRitualUmrah')}</Text>
+          <TouchableOpacity style={styles.changeBtn} onPress={onChangeRitual}>
+            <Ionicons name="swap-horizontal-outline" size={16} color="#1a5f3f" />
+            <Text style={styles.changeBtnText}>{t('fidyahChangeRitual')}</Text>
           </TouchableOpacity>
         </View>
+        <Text style={styles.cardDescription}>{t('fidyahScreenIntro')}</Text>
       </View>
 
-      {renderSection('fidyahRitesTitle', rites)}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{t('fidyahRitesTitle')}</Text>
+        <ToggleRow label={t('fidyahMeeqatCrossed')} checked={meeqatCrossed} onToggle={() => setMeeqatCrossed(v => !v)} />
+        <Text style={styles.note}>{t('fidyahMeeqatNote')}</Text>
+        {isHajj && (
+          <>
+            <ToggleRow label={t('fidyahMuzdalifahMissed')} checked={muzdalifahMissed} onToggle={() => setMuzdalifahMissed(v => !v)} />
+            <Text style={styles.note}>{t('fidyahMuzdalifahNote')}</Text>
+          </>
+        )}
+      </View>
+
+      {isHajj && (
+        <>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{t('fidyahMinaTitle')}</Text>
+            <Text style={styles.note}>{t('fidyahMinaNote')}</Text>
+            <View style={styles.item}>
+              <Text style={styles.itemLabel}>{t('fidyahMinaLeftEarly')}</Text>
+              <Switch
+                value={mina.leftEarly}
+                onValueChange={v => setMina(prev => ({ ...prev, leftEarly: v }))}
+                trackColor={{ true: '#1a5f3f' }}
+              />
+            </View>
+            <ToggleRow label={t('fidyahMinaNight1')} checked={mina.missedNight1} onToggle={() => toggleMina('missedNight1')} />
+            <ToggleRow label={t('fidyahMinaNight2')} checked={mina.missedNight2} onToggle={() => toggleMina('missedNight2')} />
+            {!mina.leftEarly && (
+              <ToggleRow label={t('fidyahMinaNight3')} checked={mina.missedNight3} onToggle={() => toggleMina('missedNight3')} />
+            )}
+            {mina.leftEarly && (
+              <Text style={[styles.note, status.validEarlyDeparture ? styles.noteGood : styles.noteWarn]}>
+                {t(status.validEarlyDeparture ? 'fidyahMinaEarlyValid' : 'fidyahMinaEarlyInvalid')}
+              </Text>
+            )}
+            <Text style={styles.outcome}>{outcomeText(t, minaIds)}</Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{t('fidyahRamyTitle')}</Text>
+            <Text style={styles.note}>{t('fidyahRamyNote')}</Text>
+            {PEBBLE_DAYS.map(({ day, labelKey }) => {
+              if (day === 'tashreeq3' && mina.leftEarly) {
+                return status.thirdDayStoningRequired
+                  ? <Text key={day} style={[styles.note, styles.noteWarn]}>{t('fidyahRamyThirdDayOwed')}</Text>
+                  : null
+              }
+              return (
+                <PebbleRow
+                  key={day}
+                  label={t(labelKey)}
+                  count={pebbles[day]}
+                  max={PEBBLE_LIMITS[day]}
+                  onChange={next => setPebble(day, next)}
+                />
+              )
+            })}
+            <Text style={styles.outcome}>{outcomeText(t, ramyIds)}</Text>
+          </View>
+        </>
+      )}
+
       {renderSection('fidyahActsTitle', acts)}
       {renderSection('fidyahSpecialTitle', special)}
 
@@ -150,20 +301,31 @@ function FidyahCalculator() {
   )
 }
 
-function PremiumLocked() {
+function PremiumUpsell() {
   const { t } = useTranslation()
   return (
     <View style={styles.locked}>
-      <Ionicons name="lock-closed-outline" size={48} color="#ccc" />
-      <Text style={styles.lockedTitle}>{t('premiumLockedTitle')}</Text>
-      <Text style={styles.lockedBody}>{t('premiumLockedBody')}</Text>
+      <Ionicons name="calculator-outline" size={48} color="#1a5f3f" />
+      <Text style={styles.lockedTitle}>{t('premiumUpsellTitle')}</Text>
+      <Text style={styles.lockedBody}>{t('premiumUpsellBody')}</Text>
+      <TouchableOpacity style={styles.upsellBtn} onPress={() => Linking.openURL(PREMIUM_PLAY_STORE_URL)}>
+        <Text style={styles.upsellBtnText}>{t('premiumUpsellButton')}</Text>
+      </TouchableOpacity>
     </View>
   )
 }
 
+function PremiumFidyah() {
+  const [ritual, setRitual] = useState<Ritual | null>(null)
+  // Going back to the chooser unmounts the calculator, so a new ritual
+  // always starts from a clean slate.
+  return ritual
+    ? <FidyahCalculator ritual={ritual} onChangeRitual={() => setRitual(null)} />
+    : <RitualChooser onChoose={setRitual} />
+}
+
 export default function FidyahScreen() {
-  const { isPremium } = usePremium()
-  return isPremium ? <FidyahCalculator /> : <PremiumLocked />
+  return IS_PREMIUM_BUILD ? <PremiumFidyah /> : <PremiumUpsell />
 }
 
 const styles = StyleSheet.create({
@@ -181,18 +343,40 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 10 },
   cardDescription: { fontSize: 13, color: '#666', lineHeight: 18 },
-  ritualRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  ritualBtn: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingVertical: 10,
+  chooserCard: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 14,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 18,
+    borderWidth: 1.5,
+    borderColor: '#e2ece6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  ritualBtnActive: { borderColor: '#1a5f3f', backgroundColor: '#1a5f3f' },
-  ritualBtnText: { fontSize: 14, fontWeight: '600', color: '#888' },
-  ritualBtnTextActive: { color: '#fff' },
+  chooserText: { flex: 1, gap: 2 },
+  chooserTitle: { fontSize: 18, fontWeight: '700', color: '#1a5f3f' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  ritualName: { fontSize: 18, fontWeight: '700', color: '#1a5f3f' },
+  changeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: '#1a5f3f',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  changeBtnText: { color: '#1a5f3f', fontWeight: '600', fontSize: 13 },
+  note: { fontSize: 12, color: '#777', lineHeight: 17, marginTop: 6, marginBottom: 4 },
+  noteGood: { color: '#1a5f3f' },
+  noteWarn: { color: '#b45309' },
+  outcome: { marginTop: 10, fontSize: 13, fontWeight: '700', color: '#1a5f3f' },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -224,6 +408,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   itemCount: { fontSize: 12, fontWeight: '700', color: '#1a5f3f' },
+  roundBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#1a5f3f',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roundBtnDisabled: { borderColor: '#ddd' },
+  stepCount: { minWidth: 40, textAlign: 'center', fontSize: 13, fontWeight: '700', color: '#1a1a1a' },
   resultCard: {
     borderLeftWidth: 3,
     borderRadius: 6,
@@ -237,4 +432,6 @@ const styles = StyleSheet.create({
   locked: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12, backgroundColor: '#f5f5f0' },
   lockedTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', textAlign: 'center' },
   lockedBody: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20 },
+  upsellBtn: { marginTop: 8, backgroundColor: '#1a5f3f', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 28 },
+  upsellBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 })

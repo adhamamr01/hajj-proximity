@@ -46,7 +46,7 @@ describe('calculateFidyah', () => {
 describe('getFidyahItemsForRitual', () => {
   it('excludes Hajj-only rite items (Muzdalifah, Mina, Ramy) from Umrah', () => {
     const umrahItems = getFidyahItemsForRitual('umrah')
-    const hajjOnlyIds = ['muzdalifah_missed', 'mina_all_missed', 'mina_partial_missed', 'ramy_full_day_missed']
+    const hajjOnlyIds = ['muzdalifah_missed', 'mina_all_missed', 'mina_partial_missed', 'ramy_dam', 'ramy_partial']
     for (const id of hajjOnlyIds) {
       expect(umrahItems.some(i => i.id === id)).toBe(false)
     }

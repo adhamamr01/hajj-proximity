@@ -15,6 +15,20 @@ export interface FidyahResult {
  * النسك المتروك"). To capture a repeat, the same id can appear more than
  * once in selectedItemIds.
  */
+/**
+ * Expands per-item repeat counts into the id list calculateFidyah expects,
+ * never exceeding an item's `max` (e.g. "one or two hairs" stops at two).
+ */
+export function expandCounts(counts: Record<string, number>): string[] {
+  const itemsById = new Map(FIDYAH_ITEMS.map(item => [item.id, item]))
+  return Object.entries(counts).flatMap(([id, n]) => {
+    const item = itemsById.get(id)
+    if (!item) return []
+    const times = Math.min(Math.max(0, Math.floor(n) || 0), item.max ?? Infinity)
+    return new Array<string>(times).fill(id)
+  })
+}
+
 export function calculateFidyah(selectedItemIds: string[]): FidyahResult[] {
   const itemsById = new Map(FIDYAH_ITEMS.map(item => [item.id, item]))
   const byTier = new Map<FidyahTier, string[]>()

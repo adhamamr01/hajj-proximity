@@ -21,18 +21,21 @@ export interface FidyahItem {
   tier: FidyahTier
   category: FidyahCategory
   labelKey: TranslationKey
+  /** Upper bound for the repeat counter. Omitted = no natural limit. */
+  max?: number
 }
 
 export const FIDYAH_ITEMS: FidyahItem[] = [
-  // ── Missed / omitted rites — Hajj only (Umrah has no Muzdalifah, Mina, Ramy) ──
+  // ── Missed / omitted rites ──
+  // These are not picked from a list: src/utils/hajjRites.ts derives them
+  // from the Meeqat / Muzdalifah / Mina / stoning inputs. They live here so
+  // every fidyah id resolves to a tier through one table.
   { id: 'meeqat_crossed', ritual: 'both', tier: 'full', category: 'rite', labelKey: 'fidyahMeeqatCrossed' },
   { id: 'muzdalifah_missed', ritual: 'hajj', tier: 'full', category: 'rite', labelKey: 'fidyahMuzdalifahMissed' },
   { id: 'mina_all_missed', ritual: 'hajj', tier: 'full', category: 'rite', labelKey: 'fidyahMinaAllMissed' },
   { id: 'mina_partial_missed', ritual: 'hajj', tier: 'partial', category: 'rite', labelKey: 'fidyahMinaPartialMissed' },
-  { id: 'ramy_full_day_missed', ritual: 'hajj', tier: 'full', category: 'rite', labelKey: 'fidyahRamyFullDayMissed' },
-  { id: 'ramy_last_day_missed', ritual: 'hajj', tier: 'full', category: 'rite', labelKey: 'fidyahRamyLastDayMissed' },
-  { id: 'ramy_partial_early', ritual: 'hajj', tier: 'partial', category: 'rite', labelKey: 'fidyahRamyPartialEarly' },
-  { id: 'ramy_partial_last_day', ritual: 'hajj', tier: 'partial', category: 'rite', labelKey: 'fidyahRamyPartialLastDay' },
+  { id: 'ramy_dam', ritual: 'hajj', tier: 'full', category: 'rite', labelKey: 'fidyahRamyDam' },
+  { id: 'ramy_partial', ritual: 'hajj', tier: 'partial', category: 'rite', labelKey: 'fidyahRamyPartial' },
 
   // ── Prohibited acts — apply to both Hajj and Umrah ──
   { id: 'sewn_clothing', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahSewnClothing' },
@@ -41,9 +44,11 @@ export const FIDYAH_ITEMS: FidyahItem[] = [
   { id: 'hands_cover_women', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahHandsCoverWomen' },
   { id: 'hair_oiling', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahHairOiling' },
   { id: 'hair_removal_full', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahHairRemovalFull' },
-  { id: 'hair_removal_partial', ritual: 'both', tier: 'partial', category: 'act', labelKey: 'fidyahHairRemovalPartial' },
+  // One or two hairs/nails is a mudd each; a third completes the full fidyah
+  // (the "three or more" item), so the partial counters stop at two.
+  { id: 'hair_removal_partial', ritual: 'both', tier: 'partial', category: 'act', labelKey: 'fidyahHairRemovalPartial', max: 2 },
   { id: 'nail_trim_full', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahNailTrimFull' },
-  { id: 'nail_trim_partial', ritual: 'both', tier: 'partial', category: 'act', labelKey: 'fidyahNailTrimPartial' },
+  { id: 'nail_trim_partial', ritual: 'both', tier: 'partial', category: 'act', labelKey: 'fidyahNailTrimPartial', max: 2 },
   { id: 'perfume', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahPerfume' },
   { id: 'spousal_contact', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahSpousalContact' },
   { id: 'masturbation', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahMasturbation' },

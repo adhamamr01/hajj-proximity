@@ -6,13 +6,24 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": { "APP_VARIANT": "free" }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": { "APP_VARIANT": "free" }
+    },
+    "preview-premium": {
+      "distribution": "internal",
+      "env": { "APP_VARIANT": "premium" }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": { "APP_VARIANT": "free" }
+    },
+    "production-premium": {
+      "autoIncrement": true,
+      "env": { "APP_VARIANT": "premium" }
     }
   },
   "submit": {

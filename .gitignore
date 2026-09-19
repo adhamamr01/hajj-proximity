@@ -34,6 +34,13 @@ yarn-error.*
 .env*.local
 .env
 
+# plaintext secret files — never commit these
+expo token.txt
+google maps api key.txt
+
+# leftover public key from OCI instance SSH setup
+ssh-key-2026-09-05.key.pub
+
 # app.json contains secrets — use app.config.js instead
 app.json
 
