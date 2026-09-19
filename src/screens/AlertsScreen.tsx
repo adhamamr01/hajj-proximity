@@ -8,6 +8,7 @@ import {
   requestLocationPermission, DEFAULT_THRESHOLD_KM,
 } from '../services/LocationService'
 import { requestNotificationPermission } from '../services/NotificationService'
+import { ensureLocationDisclosureAccepted } from '../services/locationDisclosure'
 import { useTranslation } from '../i18n/I18nProvider'
 import { LocalePreference } from '../i18n/locale'
 
@@ -40,6 +41,16 @@ export default function AlertsScreen() {
       setTracking(false)
       return
     }
+    // Play policy: explain background collection in-app, and get an explicit
+    // yes, before the system permission prompt appears.
+    const disclosureAccepted = await ensureLocationDisclosureAccepted({
+      title: t('locationDisclosureTitle'),
+      body: t('locationDisclosureBody'),
+      decline: t('locationDisclosureNotNow'),
+      accept: t('locationDisclosureContinue'),
+    })
+    if (!disclosureAccepted) return
+
     const locResult = await requestLocationPermission()
     if (locResult === 'foreground_denied') {
       Alert.alert(
