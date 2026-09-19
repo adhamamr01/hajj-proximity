@@ -19,8 +19,9 @@ export async function requestNotificationPermission(): Promise<boolean> {
   const { status } = await Notifications.requestPermissionsAsync()
   if (status !== 'granted') return false
   if (Platform.OS === 'android') {
+    const strings = await getNotificationStrings()
     await Notifications.setNotificationChannelAsync('proximity', {
-      name: 'Proximity Alerts',
+      name: strings.notifChannelName,
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       sound: 'default',
@@ -33,7 +34,7 @@ const IMMEDIATE_TRIGGER = Platform.OS === 'android' ? { channelId: 'proximity' }
 
 // This module runs from a background task with no React tree, so it can't
 // use useTranslation() — it reads the same stored preference directly.
-async function getNotificationStrings() {
+export async function getNotificationStrings() {
   const stored = await AsyncStorage.getItem(LANGUAGE_PREFERENCE_KEY)
   const preference = stored === 'en' || stored === 'ar' ? stored : 'system'
   const deviceLocaleCode = Localization.getLocales()[0]?.languageCode ?? 'en'

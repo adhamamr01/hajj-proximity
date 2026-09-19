@@ -191,6 +191,8 @@ const en = {
   notifHaramEntryBody: 'You have entered the boundary of the Haram sanctuary.',
   notifHaramExitTitle: 'Exited the Haram',
   notifHaramExitBody: 'You have exited the boundary of the Haram sanctuary.',
+  notifTrackingBody: 'Monitoring your location for Meeqat and Haram alerts.',
+  notifChannelName: 'Proximity Alerts',
 }
 
 const ar: Record<keyof typeof en, string> = {
@@ -378,6 +380,8 @@ const ar: Record<keyof typeof en, string> = {
   notifHaramEntryBody: 'لقد دخلت حدود الحرم.',
   notifHaramExitTitle: 'الخروج من الحرم',
   notifHaramExitBody: 'لقد خرجت من حدود الحرم.',
+  notifTrackingBody: 'نتابع موقعك لإرسال تنبيهات الميقات والحرم.',
+  notifChannelName: 'تنبيهات القرب',
 }
 
 export const translations = { en, ar }
