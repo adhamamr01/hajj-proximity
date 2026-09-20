@@ -14,6 +14,7 @@ type T = ReturnType<typeof useTranslation>['t']
 
 const TIER_META: Record<FidyahTier, { titleKey: TranslationKey; explanationKey: TranslationKey; color: string }> = {
   full:     { titleKey: 'fidyahTierFullTitle',     explanationKey: 'fidyahTierFullExplanation',     color: '#1a5f3f' },
+  choice:   { titleKey: 'fidyahTierChoiceTitle',   explanationKey: 'fidyahTierChoiceExplanation',   color: '#2563eb' },
   partial:  { titleKey: 'fidyahTierPartialTitle',  explanationKey: 'fidyahTierPartialExplanation',  color: '#b8860b' },
   severe:   { titleKey: 'fidyahTierSevereTitle',   explanationKey: 'fidyahTierSevereExplanation',   color: '#dc2626' },
   hunting:  { titleKey: 'fidyahTierHuntingTitle',  explanationKey: 'fidyahTierHuntingExplanation',  color: '#0f766e' },
@@ -105,9 +106,7 @@ function ItemRow({ item, count, onPress, onDecrement, onReset, t }: {
           <Ionicons name="remove" size={16} color="#1a5f3f" />
         </TouchableOpacity>
       )}
-      {item.max !== undefined && checked
-        ? <Text style={styles.itemCount}>{count}/{item.max}</Text>
-        : count > 1 && <Text style={styles.itemCount}>×{count}</Text>}
+      {count > 1 && <Text style={styles.itemCount}>×{count}</Text>}
     </TouchableOpacity>
   )
 }
@@ -179,8 +178,8 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
     [ritual, meeqatCrossed, muzdalifahMissed, mina, pebbles, counts],
   )
 
-  const itemMax = (id: string) => items.find(i => i.id === id)?.max ?? Infinity
-  const increment = (id: string) => setCounts(prev => ({ ...prev, [id]: Math.min((prev[id] ?? 0) + 1, itemMax(id)) }))
+  const increment = (id: string) => setCounts(prev => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }))
+  const toggleOnce = (id: string) => setCounts(prev => ({ ...prev, [id]: (prev[id] ?? 0) > 0 ? 0 : 1 }))
   const decrement = (id: string) => setCounts(prev => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) - 1) }))
   const reset = (id: string) => setCounts(prev => ({ ...prev, [id]: 0 }))
   const setPebble = (day: StoningDay, next: number) =>
@@ -188,12 +187,20 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
   const toggleMina = (key: 'missedNight1' | 'missedNight2' | 'missedNight3') =>
     setMina(prev => ({ ...prev, [key]: !prev[key] }))
 
-  const renderSection = (titleKey: TranslationKey, sectionItems: FidyahItem[]) => {
+  const renderSection = (titleKey: TranslationKey, sectionItems: FidyahItem[], noteKey?: TranslationKey) => {
     if (sectionItems.length === 0) return null
     return (
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t(titleKey)}</Text>
-        {sectionItems.map(item => (
+        {noteKey && <Text style={styles.note}>{t(noteKey)}</Text>}
+        {sectionItems.map(item => item.once ? (
+          <ToggleRow
+            key={item.id}
+            label={t(item.labelKey)}
+            checked={(counts[item.id] ?? 0) > 0}
+            onToggle={() => toggleOnce(item.id)}
+          />
+        ) : (
           <ItemRow
             key={item.id}
             item={item}
@@ -283,7 +290,7 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
         </>
       )}
 
-      {renderSection('fidyahActsTitle', acts)}
+      {renderSection('fidyahActsTitle', acts, 'fidyahActsNote')}
       {renderSection('fidyahSpecialTitle', special)}
 
       <View style={styles.card}>

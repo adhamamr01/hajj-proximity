@@ -16,15 +16,16 @@ export interface FidyahResult {
  * once in selectedItemIds.
  */
 /**
- * Expands per-item repeat counts into the id list calculateFidyah expects,
- * never exceeding an item's `max` (e.g. "one or two hairs" stops at two).
+ * Expands per-item repeat counts into the id list calculateFidyah expects.
+ * An item that can only happen once (marriage contract, Ihsar, the first
+ * intercourse) counts at most once however many times it is passed in.
  */
 export function expandCounts(counts: Record<string, number>): string[] {
   const itemsById = new Map(FIDYAH_ITEMS.map(item => [item.id, item]))
   return Object.entries(counts).flatMap(([id, n]) => {
     const item = itemsById.get(id)
     if (!item) return []
-    const times = Math.min(Math.max(0, Math.floor(n) || 0), item.max ?? Infinity)
+    const times = Math.min(Math.max(0, Math.floor(n) || 0), item.once ? 1 : Infinity)
     return new Array<string>(times).fill(id)
   })
 }

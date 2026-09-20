@@ -3,6 +3,7 @@ import {
   MinaInput, PebblesMissed, PEBBLE_LIMITS,
 } from './hajjRites'
 import { calculateFidyah, expandCounts } from './fidyahCalculator'
+import { getFidyahItemsForRitual } from '../data/fidyah'
 
 const mina = (o: Partial<MinaInput> = {}): MinaInput => ({
   missedNight1: false, missedNight2: false, missedNight3: false, leftEarly: false, ...o,
@@ -144,16 +145,46 @@ describe('riteFidyahIds', () => {
 })
 
 describe('expandCounts', () => {
-  it('caps the one-or-two hairs and nails counters at two', () => {
-    expect(expandCounts({ hair_removal_partial: 5, nail_trim_partial: 3 }))
-      .toEqual(['hair_removal_partial', 'hair_removal_partial', 'nail_trim_partial', 'nail_trim_partial'])
+  it('does not cap the one-or-two hairs and nails counters — different occasions each count', () => {
+    expect(expandCounts({ hair_removal_partial: 5, nail_trim_partial: 3 })).toHaveLength(8)
   })
 
   it('leaves items with no natural limit uncapped', () => {
     expect(expandCounts({ perfume: 4 })).toHaveLength(4)
+    expect(expandCounts({ intercourse_repeat: 3, hunting: 2 })).toHaveLength(5)
+  })
+
+  it('counts a once-only item at most once, however many times it is passed in', () => {
+    expect(expandCounts({ marriage_contract: 7 })).toEqual(['marriage_contract'])
+    expect(expandCounts({ ihsar: 3 })).toEqual(['ihsar'])
+    expect(expandCounts({ intercourse_before_tahallul: 2 })).toEqual(['intercourse_before_tahallul'])
+    expect(expandCounts({ intercourse_umrah: 5 })).toEqual(['intercourse_umrah'])
   })
 
   it('ignores unknown ids and negative counts', () => {
     expect(expandCounts({ nope: 3, perfume: -2 })).toEqual([])
+  })
+})
+
+describe('intercourse', () => {
+  it('owes the camel once, and the free-choice fidyah for each further time', () => {
+    const result = calculateFidyah(expandCounts({
+      intercourse_before_tahallul: 1, intercourse_repeat: 2, intercourse_after_tahallul: 1,
+    }))
+    expect(result.find(r => r.tier === 'severe')?.count).toBe(1)
+    expect(result.find(r => r.tier === 'choice')?.count).toBe(3)
+  })
+
+  it('offers the once-only first intercourse for the matching rite only', () => {
+    const hajj = getFidyahItemsForRitual('hajj').map(i => i.id)
+    const umrah = getFidyahItemsForRitual('umrah').map(i => i.id)
+    expect(hajj).toContain('intercourse_before_tahallul')
+    expect(hajj).toContain('intercourse_after_tahallul')
+    expect(hajj).not.toContain('intercourse_umrah')
+    expect(umrah).toContain('intercourse_umrah')
+    expect(umrah).not.toContain('intercourse_before_tahallul')
+    expect(umrah).not.toContain('intercourse_after_tahallul')
+    expect(hajj).toContain('intercourse_repeat')
+    expect(umrah).toContain('intercourse_repeat')
   })
 })

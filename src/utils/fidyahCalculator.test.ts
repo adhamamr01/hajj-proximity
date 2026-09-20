@@ -6,30 +6,38 @@ describe('calculateFidyah', () => {
     expect(calculateFidyah([])).toEqual([])
   })
 
-  it('groups a single full-tier violation correctly', () => {
+  it('groups a single prohibited-act violation under the free-choice fidyah', () => {
     const result = calculateFidyah(['perfume'])
-    expect(result).toEqual([{ tier: 'full', count: 1, itemIds: ['perfume'] }])
+    expect(result).toEqual([{ tier: 'choice', count: 1, itemIds: ['perfume'] }])
   })
 
-  it('groups multiple different full-tier violations under one tier', () => {
+  it('groups multiple different prohibited acts under one tier', () => {
     const result = calculateFidyah(['perfume', 'sewn_clothing', 'head_cover_men'])
     expect(result).toHaveLength(1)
-    expect(result[0].tier).toBe('full')
+    expect(result[0].tier).toBe('choice')
     expect(result[0].count).toBe(3)
   })
 
-  it('separates full and partial tiers', () => {
+  it('separates the free-choice fidyah from the mudd tier', () => {
     const result = calculateFidyah(['hair_removal_full', 'nail_trim_partial'])
-    const full = result.find(r => r.tier === 'full')
-    const partial = result.find(r => r.tier === 'partial')
-    expect(full?.count).toBe(1)
-    expect(partial?.count).toBe(1)
+    expect(result.find(r => r.tier === 'choice')?.count).toBe(1)
+    expect(result.find(r => r.tier === 'partial')?.count).toBe(1)
   })
 
   it('repeats the fidyah for the same violation committed multiple times', () => {
-    // e.g. perfume applied on two separate occasions -> two full fidyahs
+    // e.g. perfume applied on two separate occasions -> two fidyahs
     const result = calculateFidyah(['perfume', 'perfume'])
-    expect(result).toEqual([{ tier: 'full', count: 2, itemIds: ['perfume', 'perfume'] }])
+    expect(result).toEqual([{ tier: 'choice', count: 2, itemIds: ['perfume', 'perfume'] }])
+  })
+
+  it('never puts a prohibited act in the ordered missed-rite tier', () => {
+    // The two are different fidyahs: a missed rite is sheep-then-fasting in
+    // order; a prohibited act is a free choice of three. Mixing them shows
+    // the wrong instructions.
+    const wrong = FIDYAH_ITEMS.filter(i => i.category === 'act' && i.tier === 'full')
+    expect(wrong).toEqual([])
+    const rites = FIDYAH_ITEMS.filter(i => i.category === 'rite' && i.tier === 'choice')
+    expect(rites).toEqual([])
   })
 
   it('routes hunting, marriage, ihsar, and severe cases to their own tiers', () => {

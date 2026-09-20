@@ -3,14 +3,17 @@ import { TranslationKey } from '../i18n/translations'
 export type Ritual = 'hajj' | 'umrah'
 
 /**
- * The six expiation categories from the source fidyah rules (الفدية.docx /
- * fidyaUmrah.docx). Tiers 'full' and 'partial' share the same underlying
- * obligation (a full fidyah vs a smaller mudd-based one) but are reached by
- * two different kinds of cause — a fully missed/omitted rite, or fully
- * committing a prohibited act — which the source document itself groups
- * together as one fidyah with a "general" and a "specific" cause.
+ * The expiation categories. Checked against Hashiyat al-Bajuri, Tuhfat
+ * al-Muhtaj and Nihayat al-Muhtaj, which sort the dams into kinds:
+ *
+ * - 'full'     a dam for a missed rite: sheep, else fasting (ordered).
+ * - 'choice'   the fidyah for a prohibited act: a free choice of a sheep,
+ *              3 days' fasting, or 3 sa' of food to six poor people.
+ * - 'partial'  one mudd of food per night, pebble, hair or nail.
+ * - 'severe'   the first intercourse: a camel (ordered); invalidates the rite.
+ * - 'hunting', 'marriage', 'ihsar'  their own rules.
  */
-export type FidyahTier = 'full' | 'partial' | 'severe' | 'hunting' | 'marriage' | 'ihsar'
+export type FidyahTier = 'full' | 'choice' | 'partial' | 'severe' | 'hunting' | 'marriage' | 'ihsar'
 
 export type FidyahCategory = 'rite' | 'act' | 'special'
 
@@ -21,8 +24,8 @@ export interface FidyahItem {
   tier: FidyahTier
   category: FidyahCategory
   labelKey: TranslationKey
-  /** Upper bound for the repeat counter. Omitted = no natural limit. */
-  max?: number
+  /** Can only happen once, so it is a checkbox rather than a counter. */
+  once?: boolean
 }
 
 export const FIDYAH_ITEMS: FidyahItem[] = [
@@ -38,31 +41,38 @@ export const FIDYAH_ITEMS: FidyahItem[] = [
   { id: 'ramy_partial', ritual: 'hajj', tier: 'partial', category: 'rite', labelKey: 'fidyahRamyPartial' },
 
   // ── Prohibited acts — apply to both Hajj and Umrah ──
-  { id: 'sewn_clothing', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahSewnClothing' },
-  { id: 'head_cover_men', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahHeadCoverMen' },
-  { id: 'face_cover_women', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahFaceCoverWomen' },
-  { id: 'hands_cover_women', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahHandsCoverWomen' },
-  { id: 'hair_oiling', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahHairOiling' },
-  { id: 'hair_removal_full', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahHairRemovalFull' },
-  // One or two hairs/nails is a mudd each; a third completes the full fidyah
-  // (the "three or more" item), so the partial counters stop at two.
-  { id: 'hair_removal_partial', ritual: 'both', tier: 'partial', category: 'act', labelKey: 'fidyahHairRemovalPartial', max: 2 },
-  { id: 'nail_trim_full', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahNailTrimFull' },
-  { id: 'nail_trim_partial', ritual: 'both', tier: 'partial', category: 'act', labelKey: 'fidyahNailTrimPartial', max: 2 },
-  { id: 'perfume', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahPerfume' },
-  { id: 'spousal_contact', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahSpousalContact' },
-  { id: 'masturbation', ritual: 'both', tier: 'full', category: 'act', labelKey: 'fidyahMasturbation' },
+  // Each time one is repeated at a different time or place it counts again,
+  // so none of these counters has a natural upper limit.
+  { id: 'sewn_clothing', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahSewnClothing' },
+  { id: 'head_cover_men', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahHeadCoverMen' },
+  { id: 'face_cover_women', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahFaceCoverWomen' },
+  { id: 'hands_cover_women', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahHandsCoverWomen' },
+  { id: 'hair_oiling', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahHairOiling' },
+  { id: 'hair_removal_full', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahHairRemovalFull' },
+  // One or two hairs/nails in one sitting is a mudd each. Removed at
+  // different times or places, every hair or nail is a mudd of its own, so
+  // this counter is not capped at two (only one occasion is).
+  { id: 'hair_removal_partial', ritual: 'both', tier: 'partial', category: 'act', labelKey: 'fidyahHairRemovalPartial' },
+  { id: 'nail_trim_full', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahNailTrimFull' },
+  { id: 'nail_trim_partial', ritual: 'both', tier: 'partial', category: 'act', labelKey: 'fidyahNailTrimPartial' },
+  { id: 'perfume', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahPerfume' },
+  { id: 'spousal_contact', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahSpousalContact' },
+  { id: 'masturbation', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahMasturbation' },
 
-  // Hajj distinguishes intercourse before vs after the first Tahallul;
-  // Umrah's Ihram ends all at once, so it has only a single "intercourse" item.
-  { id: 'intercourse_after_tahallul', ritual: 'hajj', tier: 'full', category: 'act', labelKey: 'fidyahIntercourseAfterTahallul' },
-  { id: 'intercourse_before_tahallul', ritual: 'hajj', tier: 'severe', category: 'act', labelKey: 'fidyahIntercourseBeforeTahallul' },
-  { id: 'intercourse_umrah', ritual: 'umrah', tier: 'severe', category: 'act', labelKey: 'fidyahIntercourseUmrah' },
+  // Intercourse. The first time — before the first Tahallul in Hajj, or before
+  // finishing Umrah — owes a camel and invalidates the rite; that can only
+  // happen once. Every later occurrence (another after the invalidating one,
+  // or one between the two Tahallul of Hajj) owes a free-choice fidyah, and
+  // that repeats each time even at the same time and place.
+  { id: 'intercourse_before_tahallul', ritual: 'hajj', tier: 'severe', category: 'act', labelKey: 'fidyahIntercourseBeforeTahallul', once: true },
+  { id: 'intercourse_umrah', ritual: 'umrah', tier: 'severe', category: 'act', labelKey: 'fidyahIntercourseUmrah', once: true },
+  { id: 'intercourse_repeat', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahIntercourseRepeat' },
+  { id: 'intercourse_after_tahallul', ritual: 'hajj', tier: 'choice', category: 'act', labelKey: 'fidyahIntercourseAfterTahallul' },
 
   // ── Special categories — apply to both ──
-  { id: 'marriage_contract', ritual: 'both', tier: 'marriage', category: 'special', labelKey: 'fidyahMarriageContract' },
+  { id: 'marriage_contract', ritual: 'both', tier: 'marriage', category: 'special', labelKey: 'fidyahMarriageContract', once: true },
   { id: 'hunting', ritual: 'both', tier: 'hunting', category: 'special', labelKey: 'fidyahHunting' },
-  { id: 'ihsar', ritual: 'both', tier: 'ihsar', category: 'special', labelKey: 'fidyahIhsar' },
+  { id: 'ihsar', ritual: 'both', tier: 'ihsar', category: 'special', labelKey: 'fidyahIhsar', once: true },
 ]
 
 export function getFidyahItemsForRitual(ritual: Ritual): FidyahItem[] {
