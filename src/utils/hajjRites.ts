@@ -4,8 +4,9 @@ import { Ritual } from '../data/fidyah'
  * Fidyah rules for the Hajj rites that depend on each other — the nights in
  * Mina and the stoning. Pure functions, no I/O.
  *
- * Nights: a mudd per night missed, a dam for all three. A pilgrim who leaves
- * on the 12th owes nothing for the third night or the 13th-day stoning.
+ * Nights: a mudd per night missed, a dam when every night that applies was
+ * missed — all three, or both when leaving on the 12th, since a pilgrim who
+ * leaves then owes nothing for the third night or the 13th-day stoning.
  * (Tuhfat/Nihayat al-Muhtaj call an early departure invalid after a missed
  * night; the app owner chose to drop that condition.)
  *
@@ -38,6 +39,8 @@ export interface MinaStatus {
   /** Only counts when the pilgrim stayed on past the 12th. */
   thirdNightMissed: boolean
   missedNights: number
+  /** Every night the pilgrim was required to stay was missed. */
+  allNightsMissed: boolean
   /** Leaving on the 12th drops the third night and the 13th-day stoning. */
   thirdDayStoningRequired: boolean
 }
@@ -46,14 +49,15 @@ export function minaStatus(mina: MinaInput): MinaStatus {
   const thirdNightMissed = !mina.leftEarly && mina.missedNight3
   const missedNights =
     Number(mina.missedNight1) + Number(mina.missedNight2) + Number(thirdNightMissed)
-  return { thirdNightMissed, missedNights, thirdDayStoningRequired: !mina.leftEarly }
+  const allNightsMissed = mina.missedNight1 && mina.missedNight2 && (mina.leftEarly || thirdNightMissed)
+  return { thirdNightMissed, missedNights, allNightsMissed, thirdDayStoningRequired: !mina.leftEarly }
 }
 
-/** A mudd per night missed; missing all three nights is one dam instead. */
+/** A mudd per night missed; missing every night that applies is one dam instead. */
 export function minaFidyahIds(mina: MinaInput): string[] {
-  const { missedNights } = minaStatus(mina)
+  const { missedNights, allNightsMissed } = minaStatus(mina)
   if (missedNights === 0) return []
-  if (missedNights >= 3) return ['mina_all_missed']
+  if (allNightsMissed) return ['mina_all_missed']
   return new Array<string>(missedNights).fill('mina_partial_missed')
 }
 

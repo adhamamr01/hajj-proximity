@@ -141,9 +141,9 @@ Choose Hajj or Umrah, then select what you did or missed. The app shows which ex
 • Clear results: a full fidyah, a mudd of food, or nothing owed, with what each one involves.
 • Counters stop at sensible limits, so you cannot enter more nights or pebbles than exist.
 
-FULFIL YOUR FIDYAH
+FULFILL YOUR FIDYAH
 • Send what the calculator says you owe to a tracking tab, or add a fidyah by hand.
-• Where the rules give a choice, pick how you will fulfil it: a sheep, fasting, or feeding the poor.
+• Where the rules give a choice, pick how you will fulfill it: a sheep, fasting, or feeding the poor.
 • Tap to tick off each day fasted, person fed or mudd given, until the fidyah is complete.
 
 ALERTS AS YOU TRAVEL

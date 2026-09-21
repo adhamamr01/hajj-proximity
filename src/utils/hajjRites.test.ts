@@ -40,7 +40,10 @@ describe('Mina nights', () => {
   it('charges only the nights actually missed when leaving early', () => {
     expect(outcome(mina({ missedNight1: true, leftEarly: true }))).toBe(1)
     expect(outcome(mina({ missedNight2: true, leftEarly: true }))).toBe(1)
-    expect(outcome(mina({ missedNight1: true, missedNight2: true, leftEarly: true }))).toBe(2)
+  })
+
+  it('owes a dam for nights 1 and 2 missed when leaving early — every night that applied', () => {
+    expect(outcome(mina({ missedNight1: true, missedNight2: true, leftEarly: true }))).toBe('dam')
   })
 
   it('owes a dam for all three nights, replacing the mudds', () => {
