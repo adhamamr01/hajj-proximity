@@ -3,9 +3,17 @@
 // those are actually configured (see README's Sentry setup section).
 const sentryConfigured = Boolean(process.env.SENTRY_ORG && process.env.SENTRY_PROJECT)
 
+// Free and premium ship as two separate Play Store listings (separate
+// applicationId), rather than one app with in-app billing — the Play Store
+// purchase itself is the paywall. EXPO_PUBLIC_APP_VARIANT selects which one
+// this build is; the EXPO_PUBLIC_ prefix makes the bundler inline it, which is
+// what lets the free build drop the calculator code (see FidyahScreen.tsx).
+const isPremiumBuild = process.env.EXPO_PUBLIC_APP_VARIANT === 'premium'
+const packageId = isPremiumBuild ? 'com.hajjproximity.app.premium' : 'com.hajjproximity.app'
+
 module.exports = {
   expo: {
-    name: 'Hajj Proximity',
+    name: isPremiumBuild ? 'Hajj Proximity Premium' : 'Hajj Proximity',
     slug: 'hajj-proximity',
     version: '1.0.0',
     orientation: 'portrait',
@@ -18,7 +26,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.hajjproximity.app',
+      bundleIdentifier: packageId,
       infoPlist: {
         NSLocationAlwaysAndWhenInUseUsageDescription:
           'Hajj Proximity needs your location at all times to alert you when you approach a Meeqat boundary or enter the Haram, even when the app is in the background.',
@@ -28,7 +36,7 @@ module.exports = {
       },
     },
     android: {
-      package: 'com.hajjproximity.app',
+      package: packageId,
       config: {
         googleMaps: {
           apiKey: process.env.GOOGLE_MAPS_API_KEY,
@@ -84,6 +92,7 @@ module.exports = {
       favicon: './assets/favicon.png',
     },
     extra: {
+      premiumPackageId: 'com.hajjproximity.app.premium',
       eas: {
         projectId: 'c65399d7-3ae2-43f5-bdf2-8b0dbd572ba0',
       },

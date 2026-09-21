@@ -6,13 +6,44 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_VARIANT": "free",
+        "SENTRY_ORG": "adham-mohamed-amr",
+        "SENTRY_PROJECT": "hajj-proximity"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_VARIANT": "free",
+        "SENTRY_ORG": "adham-mohamed-amr",
+        "SENTRY_PROJECT": "hajj-proximity"
+      }
+    },
+    "preview-premium": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_VARIANT": "premium",
+        "SENTRY_ORG": "adham-mohamed-amr",
+        "SENTRY_PROJECT": "hajj-proximity"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_APP_VARIANT": "free",
+        "SENTRY_ORG": "adham-mohamed-amr",
+        "SENTRY_PROJECT": "hajj-proximity"
+      }
+    },
+    "production-premium": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_APP_VARIANT": "premium",
+        "SENTRY_ORG": "adham-mohamed-amr",
+        "SENTRY_PROJECT": "hajj-proximity"
+      }
     }
   },
   "submit": {

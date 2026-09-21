@@ -11,9 +11,11 @@ interface ChecklistItem {
 }
 
 const ITEMS: ChecklistItem[] = [
-  { id: '1', textKey: 'checklistItemHair', detailKey: 'checklistItemHairDetail' },
+  { id: '1a', textKey: 'checklistItemHairRemoval', detailKey: 'checklistItemHairRemovalDetail' },
+  { id: '1b', textKey: 'checklistItemNailTrim', detailKey: 'checklistItemNailTrimDetail' },
   { id: '2', textKey: 'checklistItem1', detailKey: 'checklistItem1Detail' },
-  { id: '3', textKey: 'checklistItemPerfume', detailKey: 'checklistItemPerfumeDetail' },
+  { id: '3a', textKey: 'checklistItemPerfumeBody', detailKey: 'checklistItemPerfumeBodyDetail' },
+  { id: '3b', textKey: 'checklistItemPerfumeGarment', detailKey: 'checklistItemPerfumeGarmentDetail' },
   { id: '4', textKey: 'checklistItem2', detailKey: 'checklistItem2Detail' },
   { id: '5', textKey: 'checklistItem3', detailKey: 'checklistItem3Detail' },
   { id: '6', textKey: 'checklistItem4', detailKey: 'checklistItem4Detail' },

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native'
-import MapView, { Marker, Polyline, Polygon, Callout, PROVIDER_GOOGLE, MapType } from 'react-native-maps'
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking, Alert } from 'react-native'
+import MapView, { Marker, Polyline, Polygon, Circle, Callout, PROVIDER_GOOGLE, MapType } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { MEEQAT_POINTS, MAKKAH } from '../data/meeqat'
-import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints } from '../utils/geo'
+import { distKm, isInsidePolygon, bearingTo, midBearing, arcPoints, destPoint } from '../utils/geo'
 import { HARAM_POLYGON } from '../data/haram'
 import { useTranslation } from '../i18n/I18nProvider'
 
@@ -19,8 +19,10 @@ export default function MapScreen() {
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [mapType, setMapType] = useState<MapType>('standard')
 
-  // Compute arcs — same algorithm as the website
-  const arcs = useMemo(() => {
+  // Sectors: each meeqat's bearing/radius plus the [start, end] bearing range
+  // of its arc — kept around (not just the plotted coords) so the connector
+  // bands below can test a point against every sector's true boundary.
+  const sectors = useMemo(() => {
     const enriched = MEEQAT_POINTS
       .map(p => ({
         ...p,
@@ -33,16 +35,20 @@ export default function MapScreen() {
     return enriched.map((p, i) => {
       const prev = enriched[(i - 1 + n) % n]
       const next = enriched[(i + 1) % n]
-      const start = midBearing(prev.bearing, p.bearing)
-      const end = midBearing(p.bearing, next.bearing)
-      const pts = arcPoints(MAKKAH, p.radius, start, end)
       return {
-        id: p.id,
-        color: p.color,
-        coords: pts.map(([lat, lng]) => ({ latitude: lat, longitude: lng })),
+        ...p,
+        start: midBearing(prev.bearing, p.bearing),
+        end: midBearing(p.bearing, next.bearing),
       }
     })
   }, [])
+
+  // Compute arcs — same algorithm as the website
+  const arcs = useMemo(() => sectors.map(s => ({
+    id: s.id,
+    color: s.color,
+    coords: arcPoints(MAKKAH, s.radius, s.start, s.end).map(([lat, lng]) => ({ latitude: lat, longitude: lng })),
+  })), [sectors])
 
   // Straight segments joining each arc's end to the next arc's start — the
   // two points share a bearing (the sector boundary) but sit at different
@@ -57,6 +63,65 @@ export default function MapScreen() {
       }
     })
   }, [arcs])
+
+  // Two dotted lines flanking each connector, colored like the farther of
+  // its two neighboring meeqats. Each is offset from the connector by a
+  // fixed real-world distance (constant screen distance at any zoom, since
+  // the map projection is locally uniform), then the sub-segment that would
+  // overlap a sector's own arc is numerically clipped out — same technique
+  // used to preview this in chat, just run in bearing/radius space instead
+  // of screen pixels.
+  const connectorBands = useMemo(() => {
+    const OFFSET_KM = 6
+    const BAND_KM = 4
+    const SAMPLES = 120
+
+    const normalizeNear = (bearing: number, ref: number) => {
+      let b = bearing
+      while (b < ref - 180) b += 360
+      while (b > ref + 180) b -= 360
+      return b
+    }
+
+    const isHidden = (bearing: number, radius: number) =>
+      sectors.some(s => {
+        const b = normalizeNear(bearing, (s.start + s.end) / 2)
+        return Math.abs(radius - s.radius) <= BAND_KM && b >= s.start && b <= s.end
+      })
+
+    const n = sectors.length
+    const bands: { id: string; color: string; coords: { latitude: number; longitude: number }[] }[] = []
+
+    sectors.forEach((a, i) => {
+      const b = sectors[(i + 1) % n]
+      const boundary = a.end
+      const farther = a.radius >= b.radius ? a : b
+
+      for (const side of [-1, 1] as const) {
+        const deltaA = (OFFSET_KM / a.radius) * (180 / Math.PI)
+        const deltaB = (OFFSET_KM / b.radius) * (180 / Math.PI)
+        const bearingAt = (t: number) => boundary + side * (deltaA + (deltaB - deltaA) * t)
+        const radiusAt = (t: number) => a.radius + (b.radius - a.radius) * t
+
+        let run: { latitude: number; longitude: number }[] = []
+        for (let s = 0; s <= SAMPLES; s++) {
+          const t = s / SAMPLES
+          const bearing = bearingAt(t)
+          const radius = radiusAt(t)
+          if (isHidden(bearing, radius)) {
+            if (run.length > 1) bands.push({ id: `${a.id}-${b.id}-${side}-${bands.length}`, color: farther.color, coords: run })
+            run = []
+          } else {
+            const [lat, lng] = destPoint(MAKKAH, bearing, radius)
+            run.push({ latitude: lat, longitude: lng })
+          }
+        }
+        if (run.length > 1) bands.push({ id: `${a.id}-${b.id}-${side}-${bands.length}`, color: farther.color, coords: run })
+      }
+    })
+
+    return bands
+  }, [sectors])
 
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null
@@ -86,6 +151,17 @@ export default function MapScreen() {
     start()
     return () => { subscription?.remove() }
   }, [locale])
+
+  // react-native-maps' Circle has no onPress of its own, so hit-test taps
+  // on the map against the circle's border (a small tolerance band around
+  // the 82.5km radius, not the whole filled interior) instead.
+  const CIRCLE_BORDER_TOLERANCE_KM = 3
+  const handleMapPress = (e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+    const { latitude, longitude } = e.nativeEvent.coordinate
+    if (Math.abs(distKm(MAKKAH, [latitude, longitude]) - 82.5) <= CIRCLE_BORDER_TOLERANCE_KM) {
+      Alert.alert('', t('meeqatCircleRule'))
+    }
+  }
 
   const centerOnUser = () => {
     if (!userLocation) return
@@ -120,6 +196,7 @@ export default function MapScreen() {
         initialRegion={{ latitude: 22.5, longitude: 40.0, latitudeDelta: 8, longitudeDelta: 8 }}
         showsUserLocation
         showsMyLocationButton={false}
+        onPress={handleMapPress}
       >
         {/* Makkah marker */}
         <Marker
@@ -173,12 +250,32 @@ export default function MapScreen() {
           />
         ))}
 
+        {/* Dotted bands flanking each connector, colored like the farther meeqat */}
+        {connectorBands.map(band => (
+          <Polyline
+            key={`band-${band.id}`}
+            coordinates={band.coords}
+            strokeColor={band.color}
+            strokeWidth={1.5}
+            lineDashPattern={[4, 4]}
+          />
+        ))}
+
         {/* Haram boundary */}
         <Polygon
           coordinates={HARAM_COORDS}
           strokeColor="#16a34a"
           strokeWidth={3}
           fillColor="rgba(34, 197, 94, 0.2)"
+        />
+
+        {/* Reference circle: 82.5km radius around Makkah */}
+        <Circle
+          center={{ latitude: MAKKAH[0], longitude: MAKKAH[1] }}
+          radius={82500}
+          strokeColor="#d4af37"
+          strokeWidth={2}
+          fillColor="transparent"
         />
       </MapView>
 

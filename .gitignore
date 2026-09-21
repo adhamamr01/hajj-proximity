@@ -34,6 +34,13 @@ yarn-error.*
 .env*.local
 .env
 
+# plaintext secret files — never commit these
+expo token.txt
+google maps api key.txt
+
+# leftover public key from OCI instance SSH setup
+ssh-key-2026-09-05.key.pub
+
 # app.json contains secrets — use app.config.js instead
 app.json
 
@@ -47,3 +54,12 @@ app.json
 # local eas build --local output
 *.apk
 *.aab
+
+# source reference documents (not app assets — content is transcribed
+# into src/data and src/i18n, not shipped as files)
+*.docx
+
+.env.local
+
+# raw Play Store screenshot candidates (finals go in store/screenshots/free and premium)
+store/screenshots/candidates/

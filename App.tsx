@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import type { ComponentType } from 'react'
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { StatusBar } from 'expo-status-bar'
@@ -11,6 +12,7 @@ import MapScreen from './src/screens/MapScreen'
 import HaramScreen from './src/screens/HaramScreen'
 import AlertsScreen from './src/screens/AlertsScreen'
 import ChecklistScreen from './src/screens/ChecklistScreen'
+import FidyahScreen from './src/screens/FidyahScreen'
 import { log, logError } from './src/utils/log'
 
 log('app', 'App.tsx module evaluated')
@@ -25,14 +27,26 @@ ErrorUtils.setGlobalHandler((error, isFatal) => {
 })
 
 const Tab = createBottomTabNavigator()
+
+// The Fulfill Fidyah tab exists only in the premium build. Same rule as
+// FidyahScreen.tsx: keep this a bare `process.env.X === 'literal'` ternary so
+// the bundler drops the require() from the free build.
+const FulfillScreen: ComponentType | null =
+  process.env.EXPO_PUBLIC_APP_VARIANT === 'premium'
+    ? require('./src/screens/FidyahFulfillScreen').default
+    : null
 const navigationRef = createNavigationContainerRef()
 
 // DSN is a public identifier by Sentry's own design, safe to inline via EXPO_PUBLIC_.
 // Left unset in dev — Sentry.init() is a no-op without a dsn.
+// Crash reports only: no performance tracing, session replay or feedback widget,
+// so nothing beyond what the privacy policy describes leaves the device.
+// `environment` tells free and premium crashes apart in the one Sentry project.
 if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-    tracesSampleRate: 1.0,
+    environment: process.env.EXPO_PUBLIC_APP_VARIANT ?? 'free',
+    tracesSampleRate: 0,
   })
 }
 
@@ -71,6 +85,8 @@ function AppNavigator() {
               Haram:     'globe-outline',
               Alerts:    'settings-outline',
               Checklist: 'checkbox-outline',
+              Fidyah:    'calculator-outline',
+              Fulfill:    'checkmark-done-outline',
             }
             return <Ionicons name={icons[route.name]} size={size} color={color} />
           },
@@ -96,6 +112,18 @@ function AppNavigator() {
           component={ChecklistScreen}
           options={{ title: t('tabChecklistTitle'), tabBarLabel: t('tabChecklistLabel') }}
         />
+        <Tab.Screen
+          name="Fidyah"
+          component={FidyahScreen}
+          options={{ title: t('tabFidyahTitle'), tabBarLabel: t('tabFidyahLabel') }}
+        />
+        {FulfillScreen && (
+          <Tab.Screen
+            name="Fulfill"
+            component={FulfillScreen}
+            options={{ title: t('tabFulfillTitle'), tabBarLabel: t('tabFulfilLabel') }}
+          />
+        )}
       </Tab.Navigator>
     </NavigationContainer>
   )

@@ -3,7 +3,7 @@ import * as TaskManager from 'expo-task-manager'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { MEEQAT_POINTS } from '../data/meeqat'
 import { HARAM_POLYGON } from '../data/haram'
-import { sendMeeqatAlert, sendHaramEntryAlert, sendHaramExitAlert } from './NotificationService'
+import { sendMeeqatAlert, sendHaramEntryAlert, sendHaramExitAlert, getNotificationStrings } from './NotificationService'
 import { evaluateLocationUpdate, AlertState } from './alertLogic'
 
 export const LOCATION_TASK = 'hajj-proximity-location'
@@ -79,6 +79,7 @@ export async function requestLocationPermission(): Promise<LocationPermissionRes
 export async function startTracking(): Promise<void> {
   const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK).catch(() => false)
   if (running) return
+  const strings = await getNotificationStrings()
   await Location.startLocationUpdatesAsync(LOCATION_TASK, {
     accuracy: Location.Accuracy.Balanced,
     distanceInterval: 500,   // update every 500 m of movement
@@ -86,7 +87,7 @@ export async function startTracking(): Promise<void> {
     showsBackgroundLocationIndicator: true,
     foregroundService: {
       notificationTitle: 'Hajj Proximity',
-      notificationBody: 'Monitoring your location for Meeqat and Haram alerts.',
+      notificationBody: strings.notifTrackingBody,
       notificationColor: '#1a5f3f',
     },
   })
