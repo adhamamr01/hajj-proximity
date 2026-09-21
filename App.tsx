@@ -39,10 +39,14 @@ const navigationRef = createNavigationContainerRef()
 
 // DSN is a public identifier by Sentry's own design, safe to inline via EXPO_PUBLIC_.
 // Left unset in dev — Sentry.init() is a no-op without a dsn.
+// Crash reports only: no performance tracing, session replay or feedback widget,
+// so nothing beyond what the privacy policy describes leaves the device.
+// `environment` tells free and premium crashes apart in the one Sentry project.
 if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-    tracesSampleRate: 1.0,
+    environment: process.env.EXPO_PUBLIC_APP_VARIANT ?? 'free',
+    tracesSampleRate: 0,
   })
 }
 
