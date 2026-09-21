@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Keyboard } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from '../i18n/I18nProvider'
@@ -182,6 +182,30 @@ export default function FidyahFulfillScreen() {
   const [obligations, setObligations] = useState<FulfillObligation[]>([])
   const [adding, setAdding] = useState(false)
 
+  // On Android 16 the app draws under the keyboard instead of shrinking, so a
+  // field low on the screen (the "how many mudd?" prompt) ends up hidden. Pad
+  // the list by the keyboard's height and scroll the focused field into view.
+  const scrollRef = useRef<ScrollView>(null)
+  const scrollY = useRef(0)
+  const [keyboard, setKeyboard] = useState({ height: 0, top: 0 })
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', e =>
+      setKeyboard({ height: e.endCoordinates.height, top: e.endCoordinates.screenY }))
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboard({ height: 0, top: 0 }))
+    return () => { show.remove(); hide.remove() }
+  }, [])
+  useEffect(() => {
+    if (keyboard.height === 0) return
+    // Wait for the extra padding to lay out, or the scroll would be clamped.
+    const timer = setTimeout(() => {
+      TextInput.State.currentlyFocusedInput()?.measureInWindow((_x, y, _w, h) => {
+        const overflow = y + h - (keyboard.top - 16)
+        if (overflow > 0) scrollRef.current?.scrollTo({ y: scrollY.current + overflow, animated: true })
+      })
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [keyboard])
+
   // The calculator can add to the list while this tab is in the background.
   useFocusEffect(useCallback(() => {
     let active = true
@@ -215,7 +239,14 @@ export default function FidyahFulfillScreen() {
 
   const { done, total } = progressSummary(obligations)
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      ref={scrollRef}
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingBottom: 16 + keyboard.height }]}
+      keyboardShouldPersistTaps="handled"
+      onScroll={e => { scrollY.current = e.nativeEvent.contentOffset.y }}
+      scrollEventThrottle={16}
+    >
       <View style={styles.plainCard}>
         <Text style={styles.note}>{t('fulfillIntro')}</Text>
         {total > 0 && <Text style={styles.summary}>{t('fulfillSummary', { done, total })}</Text>}
