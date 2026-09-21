@@ -1,11 +1,11 @@
 import {
   obligationsFromResults, obligationsFromManual, chooseOption, canChangeOption, resetOption,
-  tick, untick, isComplete, progressSummary, parseObligations, FULFIL_OPTIONS, MANUAL_TIERS,
-  MAX_MANUAL_COUNT, ORDERED_TIERS, FulfilObligation,
-} from './fidyahFulfilment'
+  tick, untick, isComplete, progressSummary, parseObligations, FULFILL_OPTIONS, MANUAL_TIERS,
+  MAX_MANUAL_COUNT, ORDERED_TIERS, FulfillObligation,
+} from './fidyahFulfillment'
 import { calculateFidyah } from './fidyahCalculator'
 
-const one = (tier: Parameters<typeof obligationsFromManual>[0]): FulfilObligation =>
+const one = (tier: Parameters<typeof obligationsFromManual>[0]): FulfillObligation =>
   obligationsFromManual(tier, 1)[0]
 
 describe('obligationsFromResults', () => {
@@ -55,23 +55,23 @@ describe('obligationsFromManual', () => {
   })
 
   it('offers every tier that can be owed and never the marriage contract', () => {
-    expect([...MANUAL_TIERS].sort()).toEqual(Object.keys(FULFIL_OPTIONS).sort())
+    expect([...MANUAL_TIERS].sort()).toEqual(Object.keys(FULFILL_OPTIONS).sort())
   })
 })
 
 describe('options', () => {
   it('lists the free-choice fidyah as sheep, fasting or feeding', () => {
-    expect(FULFIL_OPTIONS.choice.map(o => [o.id, o.units])).toEqual([
+    expect(FULFILL_OPTIONS.choice.map(o => [o.id, o.units])).toEqual([
       ['sacrifice', 1], ['fast3', 3], ['feed6', 6],
     ])
   })
 
   it('lists the missed-rite dam as sheep, then ten days fasting', () => {
-    expect(FULFIL_OPTIONS.full.map(o => [o.id, o.units])).toEqual([['sacrifice', 1], ['fast10', 10]])
+    expect(FULFILL_OPTIONS.full.map(o => [o.id, o.units])).toEqual([['sacrifice', 1], ['fast10', 10]])
   })
 
   it('lists the camel, cow, seven sheep, then value-based options for the severe case', () => {
-    expect(FULFIL_OPTIONS.severe.map(o => o.id)).toEqual(['camel', 'cow', 'sheep7', 'foodValue', 'fastValue'])
+    expect(FULFILL_OPTIONS.severe.map(o => o.id)).toEqual(['camel', 'cow', 'sheep7', 'foodValue', 'fastValue'])
     expect(ORDERED_TIERS).toContain('severe')
   })
 
@@ -81,7 +81,7 @@ describe('options', () => {
   })
 
   it('needs a prompt for every option without a fixed number of steps, except mudds', () => {
-    for (const [tier, options] of Object.entries(FULFIL_OPTIONS)) {
+    for (const [tier, options] of Object.entries(FULFILL_OPTIONS)) {
       for (const o of options) {
         if (o.units === null && tier !== 'partial') expect(o.promptKey).toBeDefined()
       }

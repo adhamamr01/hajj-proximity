@@ -28,12 +28,12 @@ ErrorUtils.setGlobalHandler((error, isFatal) => {
 
 const Tab = createBottomTabNavigator()
 
-// The Fulfil Fidyah tab exists only in the premium build. Same rule as
+// The Fulfill Fidyah tab exists only in the premium build. Same rule as
 // FidyahScreen.tsx: keep this a bare `process.env.X === 'literal'` ternary so
 // the bundler drops the require() from the free build.
-const FulfilScreen: ComponentType | null =
+const FulfillScreen: ComponentType | null =
   process.env.EXPO_PUBLIC_APP_VARIANT === 'premium'
-    ? require('./src/screens/FidyahFulfilScreen').default
+    ? require('./src/screens/FidyahFulfillScreen').default
     : null
 const navigationRef = createNavigationContainerRef()
 
@@ -82,7 +82,7 @@ function AppNavigator() {
               Alerts:    'settings-outline',
               Checklist: 'checkbox-outline',
               Fidyah:    'calculator-outline',
-              Fulfil:    'checkmark-done-outline',
+              Fulfill:    'checkmark-done-outline',
             }
             return <Ionicons name={icons[route.name]} size={size} color={color} />
           },
@@ -113,11 +113,11 @@ function AppNavigator() {
           component={FidyahScreen}
           options={{ title: t('tabFidyahTitle'), tabBarLabel: t('tabFidyahLabel') }}
         />
-        {FulfilScreen && (
+        {FulfillScreen && (
           <Tab.Screen
-            name="Fulfil"
-            component={FulfilScreen}
-            options={{ title: t('tabFulfilTitle'), tabBarLabel: t('tabFulfilLabel') }}
+            name="Fulfill"
+            component={FulfillScreen}
+            options={{ title: t('tabFulfillTitle'), tabBarLabel: t('tabFulfilLabel') }}
           />
         )}
       </Tab.Navigator>

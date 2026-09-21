@@ -6,8 +6,8 @@ import { useTranslation } from '../i18n/I18nProvider'
 import { getFidyahItemsForRitual, FidyahItem, Ritual } from '../data/fidyah'
 import { TIER_META } from '../data/fidyahTierMeta'
 import { calculateFidyah, expandCounts, FidyahResult } from '../utils/fidyahCalculator'
-import { obligationsFromResults } from '../utils/fidyahFulfilment'
-import { addObligations } from '../services/fidyahFulfilmentStorage'
+import { obligationsFromResults } from '../utils/fidyahFulfillment'
+import { addObligations } from '../services/fidyahFulfillmentStorage'
 import {
   MinaInput, PebblesMissed, StoningDay, PEBBLE_LIMITS,
   minaStatus, minaFidyahIds, totalPebblesMissed, ramyFidyahIds, riteFidyahIds,
@@ -178,7 +178,7 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
   useEffect(() => setTracked(false), [results])
   const track = async () => {
     if (tracked) {
-      navigation.navigate('Fulfil' as never)
+      navigation.navigate('Fulfill' as never)
       return
     }
     await addObligations(obligationsFromResults(results))

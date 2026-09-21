@@ -6,10 +6,10 @@ import { useTranslation } from '../i18n/I18nProvider'
 import { FIDYAH_ITEMS } from '../data/fidyah'
 import { TIER_META } from '../data/fidyahTierMeta'
 import {
-  FulfilObligation, FulfilOption, FulfilTier, FULFIL_OPTIONS, MANUAL_TIERS, ORDERED_TIERS, MAX_MANUAL_COUNT,
+  FulfillObligation, FulfillOption, FulfillTier, FULFILL_OPTIONS, MANUAL_TIERS, ORDERED_TIERS, MAX_MANUAL_COUNT,
   chooseOption, canChangeOption, resetOption, tick, untick, isComplete, progressSummary, obligationsFromManual,
-} from '../utils/fidyahFulfilment'
-import { loadObligations, saveObligations } from '../services/fidyahFulfilmentStorage'
+} from '../utils/fidyahFulfillment'
+import { loadObligations, saveObligations } from '../services/fidyahFulfillmentStorage'
 
 type T = ReturnType<typeof useTranslation>['t']
 
@@ -27,15 +27,15 @@ function RoundButton({ icon, onPress, disabled }: { icon: 'add' | 'remove'; onPr
 }
 
 function OptionPicker({ ob, onChoose, t }: {
-  ob: FulfilObligation
+  ob: FulfillObligation
   onChoose: (optionId: string, customUnits?: number) => void
   t: T
 }) {
-  const [pending, setPending] = useState<FulfilOption | null>(null)
+  const [pending, setPending] = useState<FulfillOption | null>(null)
   const [amount, setAmount] = useState('')
   const ordered = ORDERED_TIERS.includes(ob.tier)
 
-  const pick = (option: FulfilOption) => {
+  const pick = (option: FulfillOption) => {
     if (option.units === null) {
       setPending(option)
       setAmount('')
@@ -46,9 +46,9 @@ function OptionPicker({ ob, onChoose, t }: {
 
   return (
     <View>
-      <Text style={styles.note}>{t('fulfilChooseMethod')}</Text>
-      <Text style={styles.note}>{t(ordered ? 'fulfilOrderedHint' : 'fulfilChoiceHint')}</Text>
-      {FULFIL_OPTIONS[ob.tier].map((option, index) => (
+      <Text style={styles.note}>{t('fulfillChooseMethod')}</Text>
+      <Text style={styles.note}>{t(ordered ? 'fulfillOrderedHint' : 'fulfillChoiceHint')}</Text>
+      {FULFILL_OPTIONS[ob.tier].map((option, index) => (
         <View key={option.id}>
           <TouchableOpacity style={styles.option} onPress={() => pick(option)} activeOpacity={0.7}>
             <Text style={styles.optionIndex}>{ordered ? `${index + 1}.` : '•'}</Text>
@@ -70,7 +70,7 @@ function OptionPicker({ ob, onChoose, t }: {
                 disabled={!(Number(amount) >= 1)}
                 onPress={() => onChoose(option.id, Number(amount))}
               >
-                <Text style={styles.startBtnText}>{t('fulfilStart')}</Text>
+                <Text style={styles.startBtnText}>{t('fulfillStart')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -81,21 +81,21 @@ function OptionPicker({ ob, onChoose, t }: {
 }
 
 function ObligationCard({ ob, onChange, onRemove, t }: {
-  ob: FulfilObligation
-  onChange: (next: FulfilObligation) => void
+  ob: FulfillObligation
+  onChange: (next: FulfillObligation) => void
   onRemove: () => void
   t: T
 }) {
   const meta = TIER_META[ob.tier]
   const source = ob.sourceId ? FIDYAH_ITEMS.find(item => item.id === ob.sourceId) : undefined
-  const option = FULFIL_OPTIONS[ob.tier].find(o => o.id === ob.optionId)
+  const option = FULFILL_OPTIONS[ob.tier].find(o => o.id === ob.optionId)
   const done = isComplete(ob)
 
   return (
     <View style={[styles.card, { borderLeftColor: meta.color }, done && styles.cardDone]}>
       <View style={styles.headerRow}>
         <Text style={[styles.cardTitle, { color: meta.color }]}>{t(meta.titleKey)}</Text>
-        <TouchableOpacity onPress={onRemove} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('fulfilRemove')}>
+        <TouchableOpacity onPress={onRemove} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('fulfillRemove')}>
           <Ionicons name="trash-outline" size={18} color="#999" />
         </TouchableOpacity>
       </View>
@@ -109,19 +109,19 @@ function ObligationCard({ ob, onChange, onRemove, t }: {
           {done ? (
             <View style={styles.doneRow}>
               <Ionicons name="checkmark-circle" size={20} color="#1a5f3f" />
-              <Text style={styles.doneText}>{t('fulfilCompleted')}</Text>
+              <Text style={styles.doneText}>{t('fulfillCompleted')}</Text>
               <RoundButton icon="add" onPress={() => onChange(untick(ob))} />
             </View>
           ) : (
             <View style={styles.progressRow}>
-              <Text style={styles.remaining}>{t('fulfilRemaining', { remaining: ob.remaining, total: ob.total })}</Text>
+              <Text style={styles.remaining}>{t('fulfillRemaining', { remaining: ob.remaining, total: ob.total })}</Text>
               <RoundButton icon="add" disabled={ob.remaining >= ob.total} onPress={() => onChange(untick(ob))} />
               <RoundButton icon="remove" onPress={() => onChange(tick(ob))} />
             </View>
           )}
           {canChangeOption(ob) && (
             <TouchableOpacity onPress={() => onChange(resetOption(ob))}>
-              <Text style={styles.link}>{t('fulfilChangeMethod')}</Text>
+              <Text style={styles.link}>{t('fulfillChangeMethod')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -131,19 +131,19 @@ function ObligationCard({ ob, onChange, onRemove, t }: {
 }
 
 function AddForm({ onAdd, onCancel, t }: {
-  onAdd: (tier: FulfilTier, count: number) => void
+  onAdd: (tier: FulfillTier, count: number) => void
   onCancel: () => void
   t: T
 }) {
-  const [tier, setTier] = useState<FulfilTier>('choice')
+  const [tier, setTier] = useState<FulfillTier>('choice')
   const [count, setCount] = useState(1)
   const meta = TIER_META[tier]
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.plainCard}>
-        <Text style={styles.plainTitle}>{t('fulfilAddTitle')}</Text>
-        <Text style={styles.note}>{t('fulfilAddType')}</Text>
+        <Text style={styles.plainTitle}>{t('fulfillAddTitle')}</Text>
+        <Text style={styles.note}>{t('fulfillAddType')}</Text>
         {MANUAL_TIERS.map(key => (
           <TouchableOpacity key={key} style={styles.option} onPress={() => setTier(key)} activeOpacity={0.7}>
             <View style={[styles.radio, tier === key && { borderColor: TIER_META[key].color }]}>
@@ -156,7 +156,7 @@ function AddForm({ onAdd, onCancel, t }: {
       </View>
 
       <View style={styles.plainCard}>
-        <Text style={styles.plainTitle}>{t(tier === 'partial' ? 'fulfilAddCountMudd' : 'fulfilAddCount')}</Text>
+        <Text style={styles.plainTitle}>{t(tier === 'partial' ? 'fulfillAddCountMudd' : 'fulfillAddCount')}</Text>
         <View style={styles.progressRow}>
           <View style={styles.flex} />
           <RoundButton icon="remove" disabled={count <= 1} onPress={() => setCount(count - 1)} />
@@ -170,16 +170,16 @@ function AddForm({ onAdd, onCancel, t }: {
           <Text style={styles.secondaryBtnText}>{t('cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.primaryBtn, styles.flex]} onPress={() => onAdd(tier, count)}>
-          <Text style={styles.primaryBtnText}>{t('fulfilAddConfirm')}</Text>
+          <Text style={styles.primaryBtnText}>{t('fulfillAddConfirm')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   )
 }
 
-export default function FidyahFulfilScreen() {
+export default function FidyahFulfillScreen() {
   const { t } = useTranslation()
-  const [obligations, setObligations] = useState<FulfilObligation[]>([])
+  const [obligations, setObligations] = useState<FulfillObligation[]>([])
   const [adding, setAdding] = useState(false)
 
   // The calculator can add to the list while this tab is in the background.
@@ -189,15 +189,15 @@ export default function FidyahFulfilScreen() {
     return () => { active = false }
   }, []))
 
-  const update = (next: FulfilObligation[]) => {
+  const update = (next: FulfillObligation[]) => {
     setObligations(next)
     saveObligations(next).catch(() => {})
   }
-  const change = (next: FulfilObligation) => update(obligations.map(o => (o.id === next.id ? next : o)))
-  const confirmRemove = (ob: FulfilObligation) =>
-    Alert.alert(t('fulfilRemoveTitle'), t('fulfilRemoveMessage'), [
+  const change = (next: FulfillObligation) => update(obligations.map(o => (o.id === next.id ? next : o)))
+  const confirmRemove = (ob: FulfillObligation) =>
+    Alert.alert(t('fulfillRemoveTitle'), t('fulfillRemoveMessage'), [
       { text: t('cancel'), style: 'cancel' },
-      { text: t('fulfilRemove'), style: 'destructive', onPress: () => update(obligations.filter(o => o.id !== ob.id)) },
+      { text: t('fulfillRemove'), style: 'destructive', onPress: () => update(obligations.filter(o => o.id !== ob.id)) },
     ])
 
   if (adding) {
@@ -217,17 +217,17 @@ export default function FidyahFulfilScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.plainCard}>
-        <Text style={styles.note}>{t('fulfilIntro')}</Text>
-        {total > 0 && <Text style={styles.summary}>{t('fulfilSummary', { done, total })}</Text>}
+        <Text style={styles.note}>{t('fulfillIntro')}</Text>
+        {total > 0 && <Text style={styles.summary}>{t('fulfillSummary', { done, total })}</Text>}
       </View>
 
-      {total === 0 && <Text style={styles.empty}>{t('fulfilEmpty')}</Text>}
+      {total === 0 && <Text style={styles.empty}>{t('fulfillEmpty')}</Text>}
       {obligations.map(ob => (
         <ObligationCard key={ob.id} ob={ob} t={t} onChange={change} onRemove={() => confirmRemove(ob)} />
       ))}
 
       <TouchableOpacity style={styles.secondaryBtn} onPress={() => setAdding(true)}>
-        <Text style={styles.secondaryBtnText}>{t('fulfilAddManual')}</Text>
+        <Text style={styles.secondaryBtnText}>{t('fulfillAddManual')}</Text>
       </TouchableOpacity>
     </ScrollView>
   )
