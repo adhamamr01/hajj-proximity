@@ -60,3 +60,6 @@ app.json
 *.docx
 
 .env.local
+
+# raw Play Store screenshot candidates (finals go in store/screenshots/free and premium)
+store/screenshots/candidates/
