@@ -1,9 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useNavigation } from '@react-navigation/native'
 import { useTranslation } from '../i18n/I18nProvider'
-import { getFidyahItemsForRitual, FidyahItem, FidyahTier, Ritual } from '../data/fidyah'
+import { getFidyahItemsForRitual, FidyahItem, Ritual } from '../data/fidyah'
+import { TIER_META } from '../data/fidyahTierMeta'
 import { calculateFidyah, expandCounts, FidyahResult } from '../utils/fidyahCalculator'
+import { obligationsFromResults } from '../utils/fidyahFulfilment'
+import { addObligations } from '../services/fidyahFulfilmentStorage'
 import {
   MinaInput, PebblesMissed, StoningDay, PEBBLE_LIMITS,
   minaStatus, minaFidyahIds, totalPebblesMissed, ramyFidyahIds, riteFidyahIds,
@@ -11,16 +15,6 @@ import {
 import { TranslationKey } from '../i18n/translations'
 
 type T = ReturnType<typeof useTranslation>['t']
-
-const TIER_META: Record<FidyahTier, { titleKey: TranslationKey; explanationKey: TranslationKey; color: string }> = {
-  full:     { titleKey: 'fidyahTierFullTitle',     explanationKey: 'fidyahTierFullExplanation',     color: '#1a5f3f' },
-  choice:   { titleKey: 'fidyahTierChoiceTitle',   explanationKey: 'fidyahTierChoiceExplanation',   color: '#2563eb' },
-  partial:  { titleKey: 'fidyahTierPartialTitle',  explanationKey: 'fidyahTierPartialExplanation',  color: '#b8860b' },
-  severe:   { titleKey: 'fidyahTierSevereTitle',   explanationKey: 'fidyahTierSevereExplanation',   color: '#dc2626' },
-  hunting:  { titleKey: 'fidyahTierHuntingTitle',  explanationKey: 'fidyahTierHuntingExplanation',  color: '#0f766e' },
-  marriage: { titleKey: 'fidyahTierMarriageTitle', explanationKey: 'fidyahTierMarriageExplanation', color: '#6b7280' },
-  ihsar:    { titleKey: 'fidyahTierIhsarTitle',    explanationKey: 'fidyahTierIhsarExplanation',    color: '#7c3aed' },
-}
 
 const PEBBLE_DAYS: { day: StoningDay; labelKey: TranslationKey }[] = [
   { day: 'nahr',      labelKey: 'fidyahRamyDayNahr' },
@@ -178,6 +172,19 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
     [ritual, meeqatCrossed, muzdalifahMissed, mina, pebbles, counts],
   )
 
+  const navigation = useNavigation()
+  const [tracked, setTracked] = useState(false)
+  // Changing any answer makes the last add out of date.
+  useEffect(() => setTracked(false), [results])
+  const track = async () => {
+    if (tracked) {
+      navigation.navigate('Fulfil' as never)
+      return
+    }
+    await addObligations(obligationsFromResults(results))
+    setTracked(true)
+  }
+
   const increment = (id: string) => setCounts(prev => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }))
   const toggleOnce = (id: string) => setCounts(prev => ({ ...prev, [id]: (prev[id] ?? 0) > 0 ? 0 : 1 }))
   const decrement = (id: string) => setCounts(prev => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) - 1) }))
@@ -259,9 +266,7 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
               <ToggleRow label={t('fidyahMinaNight3')} checked={mina.missedNight3} onToggle={() => toggleMina('missedNight3')} />
             )}
             {mina.leftEarly && (
-              <Text style={[styles.note, status.validEarlyDeparture ? styles.noteGood : styles.noteWarn]}>
-                {t(status.validEarlyDeparture ? 'fidyahMinaEarlyValid' : 'fidyahMinaEarlyInvalid')}
-              </Text>
+              <Text style={[styles.note, styles.noteGood]}>{t('fidyahMinaEarlyValid')}</Text>
             )}
             <Text style={styles.outcome}>{outcomeText(t, minaIds)}</Text>
           </View>
@@ -270,11 +275,7 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
             <Text style={styles.cardTitle}>{t('fidyahRamyTitle')}</Text>
             <Text style={styles.note}>{t('fidyahRamyNote')}</Text>
             {PEBBLE_DAYS.map(({ day, labelKey }) => {
-              if (day === 'tashreeq3' && mina.leftEarly) {
-                return status.thirdDayStoningRequired
-                  ? <Text key={day} style={[styles.note, styles.noteWarn]}>{t('fidyahRamyThirdDayOwed')}</Text>
-                  : null
-              }
+              if (day === 'tashreeq3' && !status.thirdDayStoningRequired) return null
               return (
                 <PebbleRow
                   key={day}
@@ -299,6 +300,14 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
           <Text style={styles.cardDescription}>{t('fidyahNoneSelected')}</Text>
         ) : (
           results.map(result => <ResultCard key={result.tier} result={result} t={t} />)
+        )}
+        {results.some(r => r.tier !== 'marriage') && (
+          <TouchableOpacity style={[styles.trackBtn, tracked && styles.trackBtnDone]} onPress={track} activeOpacity={0.8}>
+            <Ionicons name="checkmark-done-outline" size={18} color={tracked ? '#1a5f3f' : '#fff'} />
+            <Text style={[styles.trackBtnText, tracked && styles.trackBtnTextDone]}>
+              {t(tracked ? 'fidyahTrackedButton' : 'fidyahTrackButton')}
+            </Text>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -363,7 +372,19 @@ const styles = StyleSheet.create({
   changeBtnText: { color: '#1a5f3f', fontWeight: '600', fontSize: 13 },
   note: { fontSize: 12, color: '#777', lineHeight: 17, marginTop: 6, marginBottom: 4 },
   noteGood: { color: '#1a5f3f' },
-  noteWarn: { color: '#b45309' },
+  trackBtn: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#1a5f3f',
+    borderRadius: 8,
+    paddingVertical: 11,
+  },
+  trackBtnDone: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#1a5f3f' },
+  trackBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  trackBtnTextDone: { color: '#1a5f3f' },
   outcome: { marginTop: 10, fontSize: 13, fontWeight: '700', color: '#1a5f3f' },
   item: {
     flexDirection: 'row',

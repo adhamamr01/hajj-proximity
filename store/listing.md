@@ -138,8 +138,13 @@ Choose Hajj or Umrah, then select what you did or missed. The app shows which ex
 • Missed or omitted rites: entering Ihram after passing the Meeqat, staying at Muzdalifah, the nights in Mina (including early departure), and stoning the Jamarat.
 • Prohibited acts: sewn clothing, covering the head or face, perfume, hair and nails, intimate contact, hunting and more.
 • Special cases: a marriage contract during Ihram, and being prevented from completing Hajj or Umrah.
-• Clear results: a full fidyah, a mudd of food per night or pebble, or nothing owed, with what each one involves.
+• Clear results: a full fidyah, a mudd of food, or nothing owed, with what each one involves.
 • Counters stop at sensible limits, so you cannot enter more nights or pebbles than exist.
+
+FULFIL YOUR FIDYAH
+• Send what the calculator says you owe to a tracking tab, or add a fidyah by hand.
+• Where the rules give a choice, pick how you will fulfil it: a sheep, fasting, or feeding the poor.
+• Tap to tick off each day fasted, person fed or mudd given, until the fidyah is complete.
 
 ALERTS AS YOU TRAVEL
 • Get a notification as you approach one of the five Meeqat points, so you can prepare your Ihram in time.
@@ -159,7 +164,7 @@ IHRAM CHECKLIST
 
 PRIVACY
 • No account and no ads. One purchase, with no subscription and no in-app purchases.
-• Your location and the choices you make in the calculator stay on your device. Nothing is stored, shared or sent anywhere.
+• Your location, the calculator and your fidyah progress stay on your device. Nothing is shared or sent anywhere.
 • The map needs an internet connection to load.
 
 BACKGROUND LOCATION
@@ -189,8 +194,13 @@ Hajj Proximity Premium
 • المناسك المتروكة أو الفائتة: الإحرام بعد تجاوز الميقات، والمبيت بمزدلفة، والمبيت بمنى (مع النفر الأول)، ورمي الجمرات.
 • محظورات الإحرام: لبس المخيط، وتغطية الرأس أو الوجه، والطيب، والشعر والأظفار، والمباشرة، والصيد، وغيرها.
 • حالات خاصة: عقد النكاح أثناء الإحرام، والمنع من إتمام الحج أو العمرة.
-• نتائج واضحة: فدية كاملة، أو مدّ من الطعام عن كل ليلة أو حصاة، أو لا شيء عليك، مع بيان ما يتضمنه كل منها.
+• نتائج واضحة: فدية كاملة، أو مدّ من الطعام، أو لا شيء عليك، مع بيان ما يتضمنه كل منها.
 • تتوقف العدّادات عند حدود معقولة، فلا يمكنك إدخال ليالٍ أو حصيات أكثر مما هو موجود.
+
+أداء الفدية
+• أرسل ما تبيّن لك من الحاسبة أنه واجب عليك إلى تبويب المتابعة، أو أضف فدية يدويًا.
+• وحيث يكون في الفدية تخيير، اختر كيف ستؤديها: بذبح شاة، أو بالصيام، أو بإطعام المساكين.
+• اضغط لتحتسب كل يوم صمته أو مسكين أطعمته أو مدّ أعطيته، حتى تكتمل الفدية.
 
 تنبيهات أثناء سفرك
 • يصلك إشعار عند اقترابك من أحد المواقيت الخمسة لتستعد للإحرام في وقته.
@@ -210,7 +220,7 @@ Hajj Proximity Premium
 
 الخصوصية
 • لا حسابات ولا إعلانات. عملية شراء واحدة، بلا اشتراكات ولا مشتريات داخل التطبيق.
-• يبقى موقعك واختياراتك في الحاسبة على جهازك، ولا يُخزَّن شيء منها ولا يُشارَك ولا يُرسَل إلى أي جهة.
+• يبقى موقعك والحاسبة وما أنجزته من فدية على جهازك، ولا يُشارَك شيء منها ولا يُرسَل إلى أي جهة.
 • تحتاج الخريطة إلى اتصال بالإنترنت لتحميلها.
 
 الموقع في الخلفية

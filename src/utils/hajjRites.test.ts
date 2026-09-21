@@ -1,6 +1,6 @@
 import {
   minaStatus, minaFidyahIds, totalPebblesMissed, ramyFidyahIds, riteFidyahIds,
-  MinaInput, PebblesMissed, PEBBLE_LIMITS,
+  MinaInput, PebblesMissed, PEBBLE_LIMITS, MAX_MUDD_PEBBLES,
 } from './hajjRites'
 import { calculateFidyah, expandCounts } from './fidyahCalculator'
 import { getFidyahItemsForRitual } from '../data/fidyah'
@@ -19,9 +19,9 @@ describe('Mina nights', () => {
     expect(outcome(mina())).toBe(0)
   })
 
-  it('owes nothing for a valid early departure (stayed nights 1 and 2)', () => {
+  it('owes nothing for the third night when leaving early', () => {
     expect(outcome(mina({ leftEarly: true }))).toBe(0)
-    expect(minaStatus(mina({ leftEarly: true })).validEarlyDeparture).toBe(true)
+    expect(minaStatus(mina({ leftEarly: true })).thirdNightMissed).toBe(false)
   })
 
   it('owes one mudd for a single missed night 1 or 2 while staying the third', () => {
@@ -37,13 +37,10 @@ describe('Mina nights', () => {
     expect(outcome(mina({ missedNight1: true, missedNight2: true }))).toBe(2)
   })
 
-  it('owes two mudd for one missed night plus an early departure — it is not a valid one', () => {
-    expect(outcome(mina({ missedNight1: true, leftEarly: true }))).toBe(2)
-    expect(outcome(mina({ missedNight2: true, leftEarly: true }))).toBe(2)
-  })
-
-  it('owes a dam for nights 1 and 2 missed plus an early departure', () => {
-    expect(outcome(mina({ missedNight1: true, missedNight2: true, leftEarly: true }))).toBe('dam')
+  it('charges only the nights actually missed when leaving early', () => {
+    expect(outcome(mina({ missedNight1: true, leftEarly: true }))).toBe(1)
+    expect(outcome(mina({ missedNight2: true, leftEarly: true }))).toBe(1)
+    expect(outcome(mina({ missedNight1: true, missedNight2: true, leftEarly: true }))).toBe(2)
   })
 
   it('owes a dam for all three nights, replacing the mudds', () => {
@@ -71,13 +68,20 @@ describe('stoning', () => {
     expect(ramyFidyahIds(0)).toEqual([])
   })
 
-  it('owes a mudd per pebble for one or two', () => {
+  it('owes one mudd for 1 to 7 pebbles', () => {
     expect(ramyFidyahIds(1)).toEqual(['ramy_partial'])
-    expect(ramyFidyahIds(2)).toEqual(['ramy_partial', 'ramy_partial'])
+    expect(ramyFidyahIds(3)).toEqual(['ramy_partial'])
+    expect(ramyFidyahIds(7)).toEqual(['ramy_partial'])
   })
 
-  it('owes one dam for three or more, however many', () => {
-    expect(ramyFidyahIds(3)).toEqual(['ramy_dam'])
+  it('owes two mudd for 8 to 14 pebbles', () => {
+    expect(ramyFidyahIds(8)).toEqual(['ramy_partial', 'ramy_partial'])
+    expect(ramyFidyahIds(14)).toEqual(['ramy_partial', 'ramy_partial'])
+  })
+
+  it('owes one dam above 14 pebbles, however many', () => {
+    expect(MAX_MUDD_PEBBLES).toBe(14)
+    expect(ramyFidyahIds(15)).toEqual(['ramy_dam'])
     expect(ramyFidyahIds(70)).toEqual(['ramy_dam'])
   })
 
@@ -91,14 +95,9 @@ describe('stoning', () => {
     expect(PEBBLE_LIMITS.nahr + PEBBLE_LIMITS.tashreeq1 + PEBBLE_LIMITS.tashreeq2 + PEBBLE_LIMITS.tashreeq3).toBe(70)
   })
 
-  it('drops the 13th-day stoning after a valid early departure', () => {
+  it('drops the 13th-day stoning after an early departure', () => {
     expect(totalPebblesMissed({ ...noPebbles, tashreeq3: 5 }, mina({ leftEarly: true }))).toBe(0)
-  })
-
-  it('counts the whole 13th-day stoning as missed after an invalid early departure', () => {
-    const invalid = mina({ leftEarly: true, missedNight1: true })
-    expect(totalPebblesMissed(noPebbles, invalid)).toBe(21)
-    expect(ramyFidyahIds(totalPebblesMissed(noPebbles, invalid))).toEqual(['ramy_dam'])
+    expect(totalPebblesMissed(noPebbles, mina({ leftEarly: true, missedNight1: true }))).toBe(0)
   })
 })
 

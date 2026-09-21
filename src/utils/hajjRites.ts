@@ -4,11 +4,14 @@ import { Ritual } from '../data/fidyah'
  * Fidyah rules for the Hajj rites that depend on each other — the nights in
  * Mina and the stoning. Pure functions, no I/O.
  *
- * Sources (Shafi'i): Tuhfat al-Muhtaj and Nihayat al-Muhtaj, chapter on the
- * nights of Tashreeq (early departure is valid only for one who stayed the
- * first two nights); Hashiyat al-Bajuri (three or more pebbles is a dam);
- * al-Nawawi's al-Majmu' via Islamweb fatwa 13630 (one mudd per pebble below
- * three). Nights: a mudd per night missed, a dam for all three.
+ * Nights: a mudd per night missed, a dam for all three. A pilgrim who leaves
+ * on the 12th owes nothing for the third night or the 13th-day stoning.
+ * (Tuhfat/Nihayat al-Muhtaj call an early departure invalid after a missed
+ * night; the app owner chose to drop that condition.)
+ *
+ * Stoning: a mudd per jamrah's worth of pebbles missed (7 pebbles), so 1-7
+ * is one mudd and 8-14 is two; more than 14 is a dam. This is the app
+ * owner's rule — Hashiyat al-Bajuri instead makes three pebbles a dam.
  */
 
 /** Most pebbles that can be missed on each stoning day. */
@@ -32,26 +35,18 @@ export interface MinaInput {
 }
 
 export interface MinaStatus {
-  /** Early departure only counts for one who stayed the first two nights. */
-  validEarlyDeparture: boolean
-  /** The third night counts as missed: left early invalidly, or stayed on but skipped it. */
+  /** Only counts when the pilgrim stayed on past the 12th. */
   thirdNightMissed: boolean
   missedNights: number
-  /** Without a valid early departure the 13th-day stoning is still owed. */
+  /** Leaving on the 12th drops the third night and the 13th-day stoning. */
   thirdDayStoningRequired: boolean
 }
 
 export function minaStatus(mina: MinaInput): MinaStatus {
-  const validEarlyDeparture = mina.leftEarly && !mina.missedNight1 && !mina.missedNight2
-  const thirdNightMissed = mina.leftEarly ? !validEarlyDeparture : mina.missedNight3
+  const thirdNightMissed = !mina.leftEarly && mina.missedNight3
   const missedNights =
     Number(mina.missedNight1) + Number(mina.missedNight2) + Number(thirdNightMissed)
-  return {
-    validEarlyDeparture,
-    thirdNightMissed,
-    missedNights,
-    thirdDayStoningRequired: !validEarlyDeparture,
-  }
+  return { thirdNightMissed, missedNights, thirdDayStoningRequired: !mina.leftEarly }
 }
 
 /** A mudd per night missed; missing all three nights is one dam instead. */
@@ -64,16 +59,11 @@ export function minaFidyahIds(mina: MinaInput): string[] {
 
 const clamp = (n: number, max: number) => Math.min(Math.max(0, Math.floor(n) || 0), max)
 
-/**
- * Pebbles missed and not made up, across all days. If the pilgrim left early
- * without a valid early departure, the whole 13th-day stoning was missed.
- */
+/** Pebbles missed and not made up, across all days. */
 export function totalPebblesMissed(pebbles: PebblesMissed, mina: MinaInput): number {
-  const third = mina.leftEarly
-    ? minaStatus(mina).thirdDayStoningRequired
-      ? PEBBLE_LIMITS.tashreeq3
-      : 0
-    : clamp(pebbles.tashreeq3, PEBBLE_LIMITS.tashreeq3)
+  const third = minaStatus(mina).thirdDayStoningRequired
+    ? clamp(pebbles.tashreeq3, PEBBLE_LIMITS.tashreeq3)
+    : 0
   return (
     clamp(pebbles.nahr, PEBBLE_LIMITS.nahr) +
     clamp(pebbles.tashreeq1, PEBBLE_LIMITS.tashreeq1) +
@@ -82,11 +72,15 @@ export function totalPebblesMissed(pebbles: PebblesMissed, mina: MinaInput): num
   )
 }
 
-/** A mudd per pebble for one or two; three or more is one dam. */
+/** Pebbles in one jamrah — each 7 missed (or part of 7) is one mudd. */
+export const PEBBLES_PER_MUDD = 7
+/** More than this many pebbles missed is a dam instead of mudds. */
+export const MAX_MUDD_PEBBLES = 2 * PEBBLES_PER_MUDD
+
 export function ramyFidyahIds(totalMissed: number): string[] {
   if (totalMissed <= 0) return []
-  if (totalMissed >= 3) return ['ramy_dam']
-  return new Array<string>(totalMissed).fill('ramy_partial')
+  if (totalMissed > MAX_MUDD_PEBBLES) return ['ramy_dam']
+  return new Array<string>(Math.ceil(totalMissed / PEBBLES_PER_MUDD)).fill('ramy_partial')
 }
 
 export interface RiteInput {

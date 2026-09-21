@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import type { ComponentType } from 'react'
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { StatusBar } from 'expo-status-bar'
@@ -26,6 +27,14 @@ ErrorUtils.setGlobalHandler((error, isFatal) => {
 })
 
 const Tab = createBottomTabNavigator()
+
+// The Fulfil Fidyah tab exists only in the premium build. Same rule as
+// FidyahScreen.tsx: keep this a bare `process.env.X === 'literal'` ternary so
+// the bundler drops the require() from the free build.
+const FulfilScreen: ComponentType | null =
+  process.env.EXPO_PUBLIC_APP_VARIANT === 'premium'
+    ? require('./src/screens/FidyahFulfilScreen').default
+    : null
 const navigationRef = createNavigationContainerRef()
 
 // DSN is a public identifier by Sentry's own design, safe to inline via EXPO_PUBLIC_.
@@ -73,6 +82,7 @@ function AppNavigator() {
               Alerts:    'settings-outline',
               Checklist: 'checkbox-outline',
               Fidyah:    'calculator-outline',
+              Fulfil:    'checkmark-done-outline',
             }
             return <Ionicons name={icons[route.name]} size={size} color={color} />
           },
@@ -103,6 +113,13 @@ function AppNavigator() {
           component={FidyahScreen}
           options={{ title: t('tabFidyahTitle'), tabBarLabel: t('tabFidyahLabel') }}
         />
+        {FulfilScreen && (
+          <Tab.Screen
+            name="Fulfil"
+            component={FulfilScreen}
+            options={{ title: t('tabFulfilTitle'), tabBarLabel: t('tabFulfilLabel') }}
+          />
+        )}
       </Tab.Navigator>
     </NavigationContainer>
   )
