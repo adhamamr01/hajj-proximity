@@ -136,7 +136,7 @@ Hajj Proximity Premium has everything in the free Hajj Proximity app, plus a Fid
 FIDYAH CALCULATOR
 Choose Hajj or Umrah, then select what you did or missed. The app shows which expiation applies to each.
 • Missed or omitted rites: entering Ihram after passing the Meeqat, staying at Muzdalifah, the nights in Mina (including early departure), and stoning the Jamarat.
-• Prohibited acts: sewn clothing, covering the head or face, perfume, hair and nails, intimate contact, hunting and more.
+• Prohibited acts: sewn clothing, covering the head or face, perfume, hair and nails, intimate contact, hunting land game and more.
 • Special cases: a marriage contract during Ihram, and being prevented from completing Hajj or Umrah.
 • Clear results: a full fidyah, a mudd of food, or nothing owed, with what each one involves.
 • Counters stop at sensible limits, so you cannot enter more nights or pebbles than exist.
@@ -192,7 +192,7 @@ Hajj Proximity Premium
 حاسبة الفدية
 اختر الحج أو العمرة، ثم حدّد ما فعلته أو فاتك، ليبيّن لك التطبيق الفدية الواجبة عن كل منها.
 • المناسك المتروكة أو الفائتة: الإحرام بعد تجاوز الميقات، والمبيت بمزدلفة، والمبيت بمنى (مع النفر الأول)، ورمي الجمرات.
-• محظورات الإحرام: لبس المخيط، وتغطية الرأس أو الوجه، والطيب، والشعر والأظفار، والمباشرة، والصيد، وغيرها.
+• محظورات الإحرام: لبس المخيط، وتغطية الرأس أو الوجه، والطيب، والشعر والأظفار، والمباشرة، وصيد البر، وغيرها.
 • حالات خاصة: عقد النكاح أثناء الإحرام، والمنع من إتمام الحج أو العمرة.
 • نتائج واضحة: فدية كاملة، أو مدّ من الطعام، أو لا شيء عليك، مع بيان ما يتضمنه كل منها.
 • تتوقف العدّادات عند حدود معقولة، فلا يمكنك إدخال ليالٍ أو حصيات أكثر مما هو موجود.

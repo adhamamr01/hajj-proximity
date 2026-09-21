@@ -135,6 +135,13 @@ describe('riteFidyahIds', () => {
     ])
   })
 
+  it('shows a full fidyah for leaving early after missing both nights, all the way to the summary', () => {
+    const ids = riteFidyahIds({
+      ritual: 'hajj', ...base, mina: mina({ leftEarly: true, missedNight1: true, missedNight2: true }),
+    })
+    expect(calculateFidyah(ids)).toEqual([{ tier: 'full', count: 1, itemIds: ['mina_all_missed'] }])
+  })
+
   it('merges night and pebble mudds into one partial total', () => {
     const ids = riteFidyahIds({
       ritual: 'hajj', ...base, mina: mina({ missedNight1: true }),
