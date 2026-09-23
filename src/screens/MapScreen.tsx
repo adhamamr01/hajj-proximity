@@ -63,19 +63,23 @@ export default function MapScreen() {
     }
   }), [sectors])
 
-  // Straight segments joining each arc's end to the next arc's start — the
-  // two points share a bearing (the sector boundary) but sit at different
-  // radii, so connecting them closes the arcs into one continuous polygon.
+  // Straight segments at the sector boundary's true bearing, from one
+  // meeqat's radius to the next's — built from sectors[].end directly, not
+  // from the (now trimmed) arc endpoints, since the dotted bands below are
+  // anchored to that same true bearing and must stay parallel to this line.
   const connectors = useMemo(() => {
-    const n = arcs.length
-    return arcs.map((arc, i) => {
-      const next = arcs[(i + 1) % n]
+    const n = sectors.length
+    return sectors.map((a, i) => {
+      const b = sectors[(i + 1) % n]
+      const boundary = a.end
+      const [lat1, lng1] = destPoint(MAKKAH, boundary, a.radius)
+      const [lat2, lng2] = destPoint(MAKKAH, boundary, b.radius)
       return {
-        id: `${arc.id}-${next.id}`,
-        coords: [arc.coords[arc.coords.length - 1], next.coords[0]],
+        id: `${a.id}-${b.id}`,
+        coords: [{ latitude: lat1, longitude: lng1 }, { latitude: lat2, longitude: lng2 }],
       }
     })
-  }, [arcs])
+  }, [sectors])
 
   // Two dotted lines flanking each connector, colored like the farther of
   // its two neighboring meeqats, each offset from the connector by the same
