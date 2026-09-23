@@ -25,6 +25,22 @@ const PEBBLE_DAYS: { day: StoningDay; labelKey: TranslationKey }[] = [
 
 const DAM_IDS = ['mina_all_missed', 'ramy_dam']
 
+/** One Umrah's own Ihram: its own Meeqat crossing and its own prohibited acts. */
+interface UmrahEntry {
+  id: string
+  meeqatCrossed: boolean
+  counts: Record<string, number>
+}
+let umrahSequence = 0
+const newUmrahEntry = (): UmrahEntry => ({ id: `umrah-${umrahSequence++}`, meeqatCrossed: false, counts: {} })
+
+interface ItemHandlers {
+  onIncrement: (id: string) => void
+  onToggleOnce: (id: string) => void
+  onDecrement: (id: string) => void
+  onReset: (id: string) => void
+}
+
 function outcomeText(t: T, ids: string[]): string {
   if (ids.length === 0) return t('fidyahOutcomeNone')
   if (ids.some(id => DAM_IDS.includes(id))) return t('fidyahOutcomeDam')
@@ -105,6 +121,75 @@ function ItemRow({ item, count, onPress, onDecrement, onReset, t }: {
   )
 }
 
+/** A card listing togglable/countable fidyah items, bound to whichever counts+handlers the caller passes — the top-level Hajj state, or one Umrah entry's own. */
+function ItemsSection({ titleKey, items, counts, handlers, noteKey, t }: {
+  titleKey: TranslationKey
+  items: FidyahItem[]
+  counts: Record<string, number>
+  handlers: ItemHandlers
+  noteKey?: TranslationKey
+  t: T
+}) {
+  if (items.length === 0) return null
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>{t(titleKey)}</Text>
+      {noteKey && <Text style={styles.note}>{t(noteKey)}</Text>}
+      {items.map(item => item.once ? (
+        <ToggleRow
+          key={item.id}
+          label={t(item.labelKey)}
+          checked={(counts[item.id] ?? 0) > 0}
+          onToggle={() => handlers.onToggleOnce(item.id)}
+        />
+      ) : (
+        <ItemRow
+          key={item.id}
+          item={item}
+          count={counts[item.id] ?? 0}
+          onPress={() => handlers.onIncrement(item.id)}
+          onDecrement={() => handlers.onDecrement(item.id)}
+          onReset={() => handlers.onReset(item.id)}
+          t={t}
+        />
+      ))}
+    </View>
+  )
+}
+
+/** One Umrah's self-contained fidyah entry: its own Meeqat toggle, acts and special cases. */
+function UmrahCard({ entry, index, removable, onRemove, onToggleMeeqat, handlers, acts, special, t }: {
+  entry: UmrahEntry
+  index: number
+  removable: boolean
+  onRemove: () => void
+  onToggleMeeqat: () => void
+  handlers: ItemHandlers
+  acts: FidyahItem[]
+  special: FidyahItem[]
+  t: T
+}) {
+  return (
+    <View style={styles.umrahGroup}>
+      <View style={styles.headerRow}>
+        <Text style={styles.ritualName}>{t('fidyahUmrahCardTitle', { number: index + 1 })}</Text>
+        {removable && (
+          <TouchableOpacity onPress={onRemove} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('fidyahRemoveUmrah')}>
+            <Ionicons name="trash-outline" size={18} color="#999" />
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{t('fidyahRitesTitle')}</Text>
+        <ToggleRow label={t('fidyahMeeqatCrossed')} checked={entry.meeqatCrossed} onToggle={onToggleMeeqat} />
+        <Text style={styles.note}>{t('fidyahMeeqatNote')}</Text>
+      </View>
+      <ItemsSection titleKey="fidyahActsTitle" items={acts} counts={entry.counts} handlers={handlers} noteKey="fidyahActsNote" t={t} />
+      <ItemsSection titleKey="fidyahSpecialTitle" items={special} counts={entry.counts} handlers={handlers} t={t} />
+    </View>
+  )
+}
+
 function ResultCard({ result, t }: { result: FidyahResult; t: T }) {
   const meta = TIER_META[result.tier]
   return (
@@ -155,6 +240,10 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
     missedNight1: false, missedNight2: false, missedNight3: false, leftEarly: false,
   })
   const [pebbles, setPebbles] = useState<PebblesMissed>({ nahr: 0, tashreeq1: 0, tashreeq2: 0, tashreeq3: 0 })
+  // Umrah only: a trip can include more than one Umrah, each with its own
+  // Ihram — its own Meeqat crossing and its own prohibited acts — so unlike
+  // Hajj this section repeats per Umrah rather than being answered once.
+  const [umrahs, setUmrahs] = useState<UmrahEntry[]>(() => [newUmrahEntry()])
 
   const items = useMemo(() => getFidyahItemsForRitual(ritual), [ritual])
   const acts = items.filter(i => i.category === 'act')
@@ -164,13 +253,12 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
   const minaIds = minaFidyahIds(mina)
   const ramyIds = ramyFidyahIds(totalPebblesMissed(pebbles, mina))
 
-  const results = useMemo(
-    () => calculateFidyah([
-      ...riteFidyahIds({ ritual, meeqatCrossed, muzdalifahMissed, mina, pebbles }),
-      ...expandCounts(counts),
-    ]),
-    [ritual, meeqatCrossed, muzdalifahMissed, mina, pebbles, counts],
-  )
+  const results = useMemo(() => {
+    const ids = isHajj
+      ? [...riteFidyahIds({ ritual, meeqatCrossed, muzdalifahMissed, mina, pebbles }), ...expandCounts(counts)]
+      : umrahs.flatMap(u => [...(u.meeqatCrossed ? ['meeqat_crossed'] : []), ...expandCounts(u.counts)])
+    return calculateFidyah(ids)
+  }, [isHajj, ritual, meeqatCrossed, muzdalifahMissed, mina, pebbles, counts, umrahs])
 
   const navigation = useNavigation()
   const [tracked, setTracked] = useState(false)
@@ -189,38 +277,22 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
   const toggleOnce = (id: string) => setCounts(prev => ({ ...prev, [id]: (prev[id] ?? 0) > 0 ? 0 : 1 }))
   const decrement = (id: string) => setCounts(prev => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) - 1) }))
   const reset = (id: string) => setCounts(prev => ({ ...prev, [id]: 0 }))
+  const hajjHandlers: ItemHandlers = { onIncrement: increment, onToggleOnce: toggleOnce, onDecrement: decrement, onReset: reset }
   const setPebble = (day: StoningDay, next: number) =>
     setPebbles(prev => ({ ...prev, [day]: Math.min(Math.max(0, next), PEBBLE_LIMITS[day]) }))
   const toggleMina = (key: 'missedNight1' | 'missedNight2' | 'missedNight3') =>
     setMina(prev => ({ ...prev, [key]: !prev[key] }))
 
-  const renderSection = (titleKey: TranslationKey, sectionItems: FidyahItem[], noteKey?: TranslationKey) => {
-    if (sectionItems.length === 0) return null
-    return (
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{t(titleKey)}</Text>
-        {noteKey && <Text style={styles.note}>{t(noteKey)}</Text>}
-        {sectionItems.map(item => item.once ? (
-          <ToggleRow
-            key={item.id}
-            label={t(item.labelKey)}
-            checked={(counts[item.id] ?? 0) > 0}
-            onToggle={() => toggleOnce(item.id)}
-          />
-        ) : (
-          <ItemRow
-            key={item.id}
-            item={item}
-            count={counts[item.id] ?? 0}
-            onPress={() => increment(item.id)}
-            onDecrement={() => decrement(item.id)}
-            onReset={() => reset(item.id)}
-            t={t}
-          />
-        ))}
-      </View>
-    )
-  }
+  const updateUmrah = (id: string, fn: (u: UmrahEntry) => UmrahEntry) =>
+    setUmrahs(prev => prev.map(u => (u.id === id ? fn(u) : u)))
+  const addUmrah = () => setUmrahs(prev => [...prev, newUmrahEntry()])
+  const removeUmrah = (id: string) => setUmrahs(prev => (prev.length > 1 ? prev.filter(u => u.id !== id) : prev))
+  const umrahHandlers = (id: string): ItemHandlers => ({
+    onIncrement: itemId => updateUmrah(id, u => ({ ...u, counts: { ...u.counts, [itemId]: (u.counts[itemId] ?? 0) + 1 } })),
+    onToggleOnce: itemId => updateUmrah(id, u => ({ ...u, counts: { ...u.counts, [itemId]: (u.counts[itemId] ?? 0) > 0 ? 0 : 1 } })),
+    onDecrement: itemId => updateUmrah(id, u => ({ ...u, counts: { ...u.counts, [itemId]: Math.max(0, (u.counts[itemId] ?? 0) - 1) } })),
+    onReset: itemId => updateUmrah(id, u => ({ ...u, counts: { ...u.counts, [itemId]: 0 } })),
+  })
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -233,22 +305,19 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
           </TouchableOpacity>
         </View>
         <Text style={styles.cardDescription}>{t('fidyahScreenIntro')}</Text>
+        {!isHajj && <Text style={styles.note}>{t('fidyahUmrahMultipleNote')}</Text>}
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{t('fidyahRitesTitle')}</Text>
-        <ToggleRow label={t('fidyahMeeqatCrossed')} checked={meeqatCrossed} onToggle={() => setMeeqatCrossed(v => !v)} />
-        <Text style={styles.note}>{t('fidyahMeeqatNote')}</Text>
-        {isHajj && (
-          <>
+      {isHajj ? (
+        <>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{t('fidyahRitesTitle')}</Text>
+            <ToggleRow label={t('fidyahMeeqatCrossed')} checked={meeqatCrossed} onToggle={() => setMeeqatCrossed(v => !v)} />
+            <Text style={styles.note}>{t('fidyahMeeqatNote')}</Text>
             <ToggleRow label={t('fidyahMuzdalifahMissed')} checked={muzdalifahMissed} onToggle={() => setMuzdalifahMissed(v => !v)} />
             <Text style={styles.note}>{t('fidyahMuzdalifahNote')}</Text>
-          </>
-        )}
-      </View>
+          </View>
 
-      {isHajj && (
-        <>
           <View style={styles.card}>
             <Text style={styles.cardTitle}>{t('fidyahMinaTitle')}</Text>
             <Text style={styles.note}>{t('fidyahMinaNote')}</Text>
@@ -288,11 +357,32 @@ function FidyahCalculator({ ritual, onChangeRitual }: { ritual: Ritual; onChange
             })}
             <Text style={styles.outcome}>{outcomeText(t, ramyIds)}</Text>
           </View>
+
+          <ItemsSection titleKey="fidyahActsTitle" items={acts} counts={counts} handlers={hajjHandlers} noteKey="fidyahActsNote" t={t} />
+          <ItemsSection titleKey="fidyahSpecialTitle" items={special} counts={counts} handlers={hajjHandlers} t={t} />
+        </>
+      ) : (
+        <>
+          {umrahs.map((entry, index) => (
+            <UmrahCard
+              key={entry.id}
+              entry={entry}
+              index={index}
+              removable={umrahs.length > 1}
+              onRemove={() => removeUmrah(entry.id)}
+              onToggleMeeqat={() => updateUmrah(entry.id, u => ({ ...u, meeqatCrossed: !u.meeqatCrossed }))}
+              handlers={umrahHandlers(entry.id)}
+              acts={acts}
+              special={special}
+              t={t}
+            />
+          ))}
+          <TouchableOpacity style={styles.addUmrahBtn} onPress={addUmrah} activeOpacity={0.8}>
+            <Ionicons name="add-circle-outline" size={18} color="#1a5f3f" />
+            <Text style={styles.addUmrahBtnText}>{t('fidyahAddUmrah')}</Text>
+          </TouchableOpacity>
         </>
       )}
-
-      {renderSection('fidyahActsTitle', acts, 'fidyahActsNote')}
-      {renderSection('fidyahSpecialTitle', special)}
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t('fidyahResultsTitle')}</Text>
@@ -386,6 +476,18 @@ const styles = StyleSheet.create({
   trackBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   trackBtnTextDone: { color: '#1a5f3f' },
   outcome: { marginTop: 10, fontSize: 13, fontWeight: '700', color: '#1a5f3f' },
+  umrahGroup: { gap: 16 },
+  addUmrahBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: '#1a5f3f',
+    borderRadius: 8,
+    paddingVertical: 11,
+  },
+  addUmrahBtnText: { color: '#1a5f3f', fontWeight: '700', fontSize: 13 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
