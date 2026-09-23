@@ -10,6 +10,11 @@ import { useTranslation } from '../i18n/I18nProvider'
 
 const HARAM_COORDS = HARAM_POLYGON.map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
 
+// Shared by the arcs and the connector bands below, so the two touch exactly:
+// an arc is trimmed back from its true boundary by the same real-world
+// distance the band is offset from the connector at that radius.
+const OFFSET_KM = 6
+
 export default function MapScreen() {
   const { t, locale } = useTranslation()
   const mapRef = useRef<MapView>(null)
@@ -43,12 +48,20 @@ export default function MapScreen() {
     })
   }, [])
 
-  // Compute arcs — same algorithm as the website
-  const arcs = useMemo(() => sectors.map(s => ({
-    id: s.id,
-    color: s.color,
-    coords: arcPoints(MAKKAH, s.radius, s.start, s.end).map(([lat, lng]) => ({ latitude: lat, longitude: lng })),
-  })), [sectors])
+  // Compute arcs — same algorithm as the website. Each arc is trimmed back
+  // from its true sector boundary (sectors[].start/.end, still used as-is by
+  // the connectors and bands below) by the same OFFSET_KM used to place its
+  // neighboring band, so the solid arc stops exactly where the dotted band
+  // begins — no gap, no overlap.
+  const arcs = useMemo(() => sectors.map(s => {
+    const trim = (OFFSET_KM / s.radius) * (180 / Math.PI)
+    return {
+      id: s.id,
+      color: s.color,
+      coords: arcPoints(MAKKAH, s.radius, s.start + trim, s.end - trim)
+        .map(([lat, lng]) => ({ latitude: lat, longitude: lng })),
+    }
+  }), [sectors])
 
   // Straight segments joining each arc's end to the next arc's start — the
   // two points share a bearing (the sector boundary) but sit at different
@@ -65,30 +78,13 @@ export default function MapScreen() {
   }, [arcs])
 
   // Two dotted lines flanking each connector, colored like the farther of
-  // its two neighboring meeqats. Each is offset from the connector by a
-  // fixed real-world distance (constant screen distance at any zoom, since
-  // the map projection is locally uniform), then the sub-segment that would
-  // overlap a sector's own arc is numerically clipped out — same technique
-  // used to preview this in chat, just run in bearing/radius space instead
-  // of screen pixels.
+  // its two neighboring meeqats, each offset from the connector by the same
+  // OFFSET_KM the arcs are trimmed by. Each line spans the connector's full
+  // length (the same [0,1] range as the straight segment it flanks) rather
+  // than a clipped sub-section, since the arcs no longer reach far enough to
+  // overlap them.
   const connectorBands = useMemo(() => {
-    const OFFSET_KM = 6
-    const BAND_KM = 4
-    const SAMPLES = 120
-
-    const normalizeNear = (bearing: number, ref: number) => {
-      let b = bearing
-      while (b < ref - 180) b += 360
-      while (b > ref + 180) b -= 360
-      return b
-    }
-
-    const isHidden = (bearing: number, radius: number) =>
-      sectors.some(s => {
-        const b = normalizeNear(bearing, (s.start + s.end) / 2)
-        return Math.abs(radius - s.radius) <= BAND_KM && b >= s.start && b <= s.end
-      })
-
+    const SAMPLES = 40
     const n = sectors.length
     const bands: { id: string; color: string; coords: { latitude: number; longitude: number }[] }[] = []
 
@@ -96,27 +92,18 @@ export default function MapScreen() {
       const b = sectors[(i + 1) % n]
       const boundary = a.end
       const farther = a.radius >= b.radius ? a : b
+      const deltaA = (OFFSET_KM / a.radius) * (180 / Math.PI)
+      const deltaB = (OFFSET_KM / b.radius) * (180 / Math.PI)
 
       for (const side of [-1, 1] as const) {
-        const deltaA = (OFFSET_KM / a.radius) * (180 / Math.PI)
-        const deltaB = (OFFSET_KM / b.radius) * (180 / Math.PI)
-        const bearingAt = (t: number) => boundary + side * (deltaA + (deltaB - deltaA) * t)
-        const radiusAt = (t: number) => a.radius + (b.radius - a.radius) * t
-
-        let run: { latitude: number; longitude: number }[] = []
-        for (let s = 0; s <= SAMPLES; s++) {
+        const coords = Array.from({ length: SAMPLES + 1 }, (_, s) => {
           const t = s / SAMPLES
-          const bearing = bearingAt(t)
-          const radius = radiusAt(t)
-          if (isHidden(bearing, radius)) {
-            if (run.length > 1) bands.push({ id: `${a.id}-${b.id}-${side}-${bands.length}`, color: farther.color, coords: run })
-            run = []
-          } else {
-            const [lat, lng] = destPoint(MAKKAH, bearing, radius)
-            run.push({ latitude: lat, longitude: lng })
-          }
-        }
-        if (run.length > 1) bands.push({ id: `${a.id}-${b.id}-${side}-${bands.length}`, color: farther.color, coords: run })
+          const bearing = boundary + side * (deltaA + (deltaB - deltaA) * t)
+          const radius = a.radius + (b.radius - a.radius) * t
+          const [lat, lng] = destPoint(MAKKAH, bearing, radius)
+          return { latitude: lat, longitude: lng }
+        })
+        bands.push({ id: `${a.id}-${b.id}-${side}`, color: farther.color, coords })
       }
     })
 
@@ -236,7 +223,6 @@ export default function MapScreen() {
             coordinates={arc.coords}
             strokeColor={arc.color}
             strokeWidth={3}
-            lineDashPattern={[8, 5]}
           />
         ))}
 
