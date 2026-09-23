@@ -154,8 +154,26 @@ describe('riteFidyahIds', () => {
 })
 
 describe('expandCounts', () => {
-  it('does not cap the one-or-two hairs and nails counters — different occasions each count', () => {
-    expect(expandCounts({ hair_removal_partial: 5, nail_trim_partial: 3 })).toHaveLength(8)
+  it('counts a mudd for each hair or nail up to two', () => {
+    expect(expandCounts({ hair_removal_partial: 1 })).toEqual(['hair_removal_partial'])
+    expect(expandCounts({ nail_trim_partial: 2 })).toEqual(['nail_trim_partial', 'nail_trim_partial'])
+  })
+
+  it('turns three or more hairs, or three or more nails, into one full fidyah however many are added', () => {
+    expect(expandCounts({ hair_removal_partial: 3 })).toEqual(['hair_removal_full'])
+    expect(expandCounts({ hair_removal_partial: 9 })).toEqual(['hair_removal_full'])
+    expect(expandCounts({ nail_trim_partial: 3 })).toEqual(['nail_trim_full'])
+    expect(expandCounts({ nail_trim_partial: 20 })).toEqual(['nail_trim_full'])
+  })
+
+  it('keeps hairs and nails separate, and leaves an explicit three-or-more item alone', () => {
+    expect(calculateFidyah(expandCounts({ hair_removal_partial: 2, nail_trim_partial: 4 })))
+      .toEqual([
+        { tier: 'partial', count: 2, itemIds: ['hair_removal_partial', 'hair_removal_partial'] },
+        { tier: 'choice', count: 1, itemIds: ['nail_trim_full'] },
+      ])
+    expect(expandCounts({ hair_removal_full: 2, hair_removal_partial: 3 }))
+      .toEqual(['hair_removal_full', 'hair_removal_full', 'hair_removal_full'])
   })
 
   it('leaves items with no natural limit uncapped', () => {

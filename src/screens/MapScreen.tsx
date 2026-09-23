@@ -152,13 +152,32 @@ export default function MapScreen() {
   }, [locale])
 
   // react-native-maps' Circle has no onPress of its own, so hit-test taps
-  // on the map against the circle's border (a small tolerance band around
-  // the 82.5km radius, not the whole filled interior) instead.
-  const CIRCLE_BORDER_TOLERANCE_KM = 3
-  const handleMapPress = (e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
-    const { latitude, longitude } = e.nativeEvent.coordinate
-    if (Math.abs(distKm(MAKKAH, [latitude, longitude]) - 82.5) <= CIRCLE_BORDER_TOLERANCE_KM) {
-      Alert.alert('', t('meeqatCircleRule'))
+  // on the map against the circle's border instead. The tolerance is in
+  // screen units, not kilometres: a fixed distance turns into a huge band once
+  // you zoom in, and Dhat Irq sits only ~1.3 km inside the border, so
+  // tapping around its pin used to trigger the circle's message. Taps on a
+  // marker's pin are ignored too. Every point goes through pointForCoordinate
+  // so they share one unit (the tap's own `position` is raw pixels on Android).
+  const CIRCLE_BORDER_TOLERANCE_DP = 14
+  const handleMapPress = async (e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+    const map = mapRef.current
+    if (!map) return
+    try {
+      const toPoint = ([latitude, longitude]: [number, number]) => map.pointForCoordinate({ latitude, longitude })
+      const { latitude, longitude } = e.nativeEvent.coordinate
+      const [tap, center, edge, ...pins] = await Promise.all([
+        toPoint([latitude, longitude]),
+        toPoint(MAKKAH),
+        toPoint(destPoint(MAKKAH, 90, 82.5)),
+        ...MEEQAT_POINTS.map(p => toPoint([p.lat, p.lng])),
+      ])
+      const radius = Math.hypot(edge.x - center.x, edge.y - center.y)
+      const onBorder = Math.abs(Math.hypot(tap.x - center.x, tap.y - center.y) - radius) <= CIRCLE_BORDER_TOLERANCE_DP
+      // A pin stands above its coordinate, roughly 40dp tall and 24dp wide.
+      const onPin = pins.some(p => Math.abs(tap.x - p.x) <= 20 && tap.y - p.y >= -50 && tap.y - p.y <= 12)
+      if (onBorder && !onPin) Alert.alert('', t('meeqatCircleRule'))
+    } catch {
+      // No projection available (map not ready): nothing to hit-test.
     }
   }
 

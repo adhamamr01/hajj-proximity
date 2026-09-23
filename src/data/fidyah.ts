@@ -42,16 +42,16 @@ export const FIDYAH_ITEMS: FidyahItem[] = [
 
   // ── Prohibited acts — apply to both Hajj and Umrah ──
   // Each time one is repeated at a different time or place it counts again,
-  // so none of these counters has a natural upper limit.
+  // so most of these counters have no natural upper limit. (Hairs and nails
+  // are the exception: see below.)
   { id: 'sewn_clothing', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahSewnClothing' },
   { id: 'head_cover_men', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahHeadCoverMen' },
   { id: 'face_cover_women', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahFaceCoverWomen' },
   { id: 'hands_cover_women', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahHandsCoverWomen' },
   { id: 'hair_oiling', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahHairOiling' },
   { id: 'hair_removal_full', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahHairRemovalFull' },
-  // One or two hairs/nails in one sitting is a mudd each. Removed at
-  // different times or places, every hair or nail is a mudd of its own, so
-  // this counter is not capped at two (only one occasion is).
+  // One or two hairs/nails is a mudd each. Three or more is one full fidyah:
+  // expandCounts converts these counters to the 'full' item at three.
   { id: 'hair_removal_partial', ritual: 'both', tier: 'partial', category: 'act', labelKey: 'fidyahHairRemovalPartial' },
   { id: 'nail_trim_full', ritual: 'both', tier: 'choice', category: 'act', labelKey: 'fidyahNailTrimFull' },
   { id: 'nail_trim_partial', ritual: 'both', tier: 'partial', category: 'act', labelKey: 'fidyahNailTrimPartial' },

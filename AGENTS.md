@@ -63,9 +63,11 @@ tagged `environment: free` or `premium` via `EXPO_PUBLIC_APP_VARIANT`.
 ## Fidyah calculator
 
 Shafi'i fiqh rules, cross-checked against three sources: Hashiyat al-Bajuri, Tuhfat
-al-Muhtaj, Nihayat al-Muhtaj. Two rules were deliberately implemented against the app
-owner's explicit instruction rather than the books' default position — see the comments
-at the top of `src/utils/hajjRites.ts` for exactly which two and why. Get the app owner's
+al-Muhtaj, Nihayat al-Muhtaj. Three rules were deliberately implemented per the app
+owner's explicit instruction rather than the books' default position: the two described in
+the comments at the top of `src/utils/hajjRites.ts` (early departure from Mina; stoning
+mudd/dam thresholds), and hairs/nails converting to one full fidyah at three or more
+(`expandCounts` in `src/utils/fidyahCalculator.ts`). Get the app owner's
 sign-off before changing fidyah logic; ideally get scholar review before any Play Store
 release. Umrah supports multiple Umrahs per trip (repeat-the-whole-form model, each with
 its own Meeqat/acts/special-cases counts) — Hajj does not, since it's answered once per

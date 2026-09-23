@@ -20,12 +20,26 @@ export interface FidyahResult {
  * An item that can only happen once (marriage contract, Ihsar, the first
  * intercourse) counts at most once however many times it is passed in.
  */
+/**
+ * Hairs and nails: each one is a mudd, but three or more of either is one full
+ * fidyah instead — the counter for "one or two" converts to the "three or
+ * more" item once it reaches three. This is the app owner's rule (the books
+ * would still count a mudd each for hairs removed on different occasions).
+ */
+const PARTIAL_TO_FULL: Record<string, string> = {
+  hair_removal_partial: 'hair_removal_full',
+  nail_trim_partial: 'nail_trim_full',
+}
+export const FULL_FIDYAH_AT = 3
+
 export function expandCounts(counts: Record<string, number>): string[] {
   const itemsById = new Map(FIDYAH_ITEMS.map(item => [item.id, item]))
   return Object.entries(counts).flatMap(([id, n]) => {
     const item = itemsById.get(id)
     if (!item) return []
     const times = Math.min(Math.max(0, Math.floor(n) || 0), item.once ? 1 : Infinity)
+    const full = PARTIAL_TO_FULL[id]
+    if (full && times >= FULL_FIDYAH_AT) return [full]
     return new Array<string>(times).fill(id)
   })
 }
