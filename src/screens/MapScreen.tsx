@@ -48,20 +48,28 @@ export default function MapScreen() {
     })
   }, [])
 
-  // Compute arcs — same algorithm as the website. Each arc is trimmed back
-  // from its true sector boundary (sectors[].start/.end, still used as-is by
-  // the connectors and bands below) by the same OFFSET_KM used to place its
-  // neighboring band, so the solid arc stops exactly where the dotted band
-  // begins — no gap, no overlap.
-  const arcs = useMemo(() => sectors.map(s => {
-    const trim = (OFFSET_KM / s.radius) * (180 / Math.PI)
-    return {
-      id: s.id,
-      color: s.color,
-      coords: arcPoints(MAKKAH, s.radius, s.start + trim, s.end - trim)
-        .map(([lat, lng]) => ({ latitude: lat, longitude: lng })),
-    }
-  }), [sectors])
+  // Compute arcs — same algorithm as the website. At each boundary
+  // (sectors[].start/.end, still used as-is by the connectors and bands
+  // below), whichever of the two neighboring meeqats is farther from Makkah
+  // crosses over the connector to touch the far dotted line; the nearer one
+  // stops short of the connector to touch the near dotted line, same as
+  // before. Both trims/extensions use the same OFFSET_KM the bands are
+  // offset by, so every touch point lands exactly on its line.
+  const arcs = useMemo(() => {
+    const n = sectors.length
+    return sectors.map((s, i) => {
+      const prev = sectors[(i - 1 + n) % n]
+      const next = sectors[(i + 1) % n]
+      const trim = (OFFSET_KM / s.radius) * (180 / Math.PI)
+      const start = s.radius > prev.radius ? s.start - trim : s.start + trim
+      const end = s.radius > next.radius ? s.end + trim : s.end - trim
+      return {
+        id: s.id,
+        color: s.color,
+        coords: arcPoints(MAKKAH, s.radius, start, end).map(([lat, lng]) => ({ latitude: lat, longitude: lng })),
+      }
+    })
+  }, [sectors])
 
   // Straight segments at the sector boundary's true bearing, from one
   // meeqat's radius to the next's — built from sectors[].end directly, not
